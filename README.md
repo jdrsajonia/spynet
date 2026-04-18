@@ -2,53 +2,52 @@
 
 ![banner](img/spynet_penguins.png)
 
-
-**Spynet** es una aplicación web orientada al análisis y mapeo de tecnologías utilizadas en sitios web. Permite inspeccionar, comparar y comprender la composición técnica de diferentes páginas de manera estructurada.
-
----
-
-## 🚀 Idea del proyecto
-
-Spynet va más allá de detectar tecnologías. El sistema:
-
-- 📊 Analiza la estructura tecnológica de un sitio web  
-- 🗄️ Almacena resultados en una base de datos  
-- 🔍 Permite comparar múltiples sitios  
-- 🔌 Expone la información mediante una API REST  
-
-Esto lo convierte en un pequeño **repositorio de inteligencia web**, útil para análisis y aprendizaje.
+**Spynet** is a web application designed to analyze and map the technologies used by websites. It allows users to inspect, compare, and understand the technical composition of different web pages in a structured way.
 
 ---
 
-## ⚙️ ¿Qué analiza?
+## 🚀 Project Idea
 
-Dado un dominio, Spynet puede obtener:
+Spynet goes beyond simple technology detection. The system:
 
-- 🧩 Tecnologías (frontend, backend, servicios)  
-- 🌐 Información de dominio (WHOIS)  
-- 📡 Datos DNS  
-- 📅 Snapshots históricos (opcional)  
+- 📊 Analyzes the technological structure of a website  
+- 🗄️ Stores results in a database  
+- 🔍 Allows comparison between multiple websites  
+- 🔌 Exposes data through a REST API  
 
----
-
-## 🔍 Funcionalidades principales
-
-- Análisis de una URL  
-- Visualización de resultados  
-- Comparación entre sitios  
-- Consulta vía API  
-- Almacenamiento de análisis  
+This turns it into a small **web intelligence repository**, useful for both analysis and learning.
 
 ---
 
-## 🧠 Enfoque
+## ⚙️ What does it analyze?
 
-El sistema sigue una arquitectura modular:
+Given a domain, Spynet can retrieve:
 
-- Backend con Django + API REST  
-- Servicios desacoplados para cada análisis  
-- Base de datos relacional  
-- Posibilidad de escalar a análisis históricos  
+- 🧩 Technologies (frontend, backend, services)  
+- 🌐 Domain information (WHOIS)  
+- 📡 DNS data  
+- 📅 Historical snapshots (optional)  
+
+---
+
+## 🔍 Main Features
+
+- URL analysis  
+- Results visualization  
+- Website comparison  
+- API access  
+- Analysis storage  
+
+---
+
+## 🧠 Approach
+
+The system follows a modular architecture:
+
+- Backend built with Django + REST API  
+- Decoupled services for each type of analysis  
+- Relational database for persistence  
+- Scalable towards historical and analytical features  
 
 ---
 
@@ -62,11 +61,11 @@ El sistema sigue una arquitectura modular:
 
 ---
 
-## 📌 Estado
+## 📌 Status
 
-Proyecto en desarrollo para **Ingeniería de Software II**.
+Project under development for **Software Engineering II**.
 
-Previsualización en https://jdrsajonia.github.io
+Preview available at: https://jdrsajonia.github.io
 
 ---
 
