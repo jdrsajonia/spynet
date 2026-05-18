@@ -1,0 +1,37 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+
+# Entorno virtual
+venv/
+env/
+.env/
+.venv/
+
+# Variables de entorno (credenciales, API keys)
+.env
+*.env
+
+# IDEs
+.vscode/
+.idea/
+*.iml
+
+# Sistema operativo
+.DS_Store
+Thumbs.db
+
+# Base de datos local
+*.sqlite3
+*.db
+
+# Logs
+*.log
+
+# Archivos de distribución Python
+dist/
+build/
+*.egg-info/
