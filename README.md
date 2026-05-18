@@ -6,7 +6,7 @@
 
 ---
 
-## 🚀 Project Idea
+## 🚀 Project Develop
 
 Spynet goes beyond simple technology detection. The system:
 
