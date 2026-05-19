@@ -1,7 +1,6 @@
 import requests # pip install requests
 from whois import extract_domain
 
-
 class GeoService():
     def __init__(self):
         self.api_endpoint="http://ip-api.com/json/" # no se necesita api_key
@@ -27,6 +26,7 @@ class GeoService():
                 "lat": data.get("lat"), 
                 "lon": data.get("lon"),  
             }  
+        
         except Exception:
             return None  #RF-14 
 

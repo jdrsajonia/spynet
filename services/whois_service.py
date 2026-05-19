@@ -1,10 +1,8 @@
 from datetime import datetime, timezone
 import whois # pip install python-whois
 
-
 class WhoisService():
     def get_whois(self, url:str, all_data=False):
-
         try:
             domain=whois.extract_domain(url)
             data=whois.whois(domain)
@@ -23,7 +21,6 @@ class WhoisService():
                 date_creation = date_creation.replace(tzinfo=timezone.utc) if date_creation.tzinfo is None else date_creation
                 domain_age=round(((now-date_creation).days)/365,1) #RF-06
 
-
             if all_data:
                 return dict(data)
             
@@ -34,7 +31,6 @@ class WhoisService():
                 "expiration_date": str(date_expiration),
                 "domain_age_years": domain_age
             }
-            
             
         except Exception:
             return None  #RF-14

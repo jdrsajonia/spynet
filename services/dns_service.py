@@ -1,8 +1,7 @@
-import dns.resolver
+import dns.resolver #pip install dnspython
 from whois import extract_domain
 
 class DnsRecordService():
-
     def get_dns_records(self, url: str) -> dict:
         domain=extract_domain(url)
         records={
@@ -11,9 +10,8 @@ class DnsRecordService():
             "CNAME":[],
             "NS":[],
             "MX":[]
-            
-
         }
+        
         keys=records.keys()
         for type_record in keys:
             try:
