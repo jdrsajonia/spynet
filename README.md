@@ -73,6 +73,19 @@ Preview available at: https://jdrsajonia.github.io
   <img src="img/tux_spynet_profesional.png" width="120"/>
 </p>
 
-<p align="center">
-  <i>Watching every system. Auditing every weakness.</i>
-</p>
+<p align="center">A URL is never just an address.</p>
+<br>
+<p align="center">It is a fingerprint.<br>
+A history.<br>
+A confession.</p>
+<br>
+<p align="center">We read what others overlook.<br>
+We map what others ignore.<br>
+We find what was never meant to be found.</p>
+<br>
+<p align="center"><i>We are the exegetes of the web.</i></p>
+<br>
+<p align="center"><b>Spynet.</b></p>
+
+---
+
