@@ -63,7 +63,7 @@ The system follows a modular architecture:
 
 ## 📌 Status
 
-Project under development for **Software Engineering II**.
+Project under development for *Software Engineering II*.
 
 Preview available at: https://jdrsajonia.github.io
 
