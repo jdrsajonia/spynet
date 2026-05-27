@@ -86,6 +86,5 @@ We find what was never meant to be found.</p>
 <p align="center"><i>We are the exegetes of the web.</i></p>
 <br>
 <p align="center"><b>Spynet.</b></p>
-
 ---
 
