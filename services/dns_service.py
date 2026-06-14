@@ -1,7 +1,13 @@
 import dns.resolver #pip install dnspython
+from .base_services import BaseServices
 from whois import extract_domain
 
-class DnsRecordService():
+class DnsRecordService(BaseServices):
+
+    def fetch_service(self, url, depth_data = False):
+        return self.get_dns_records(url)
+
+
     def get_dns_records(self, url: str) -> dict:
         try:
             domain=extract_domain(url)

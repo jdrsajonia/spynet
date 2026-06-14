@@ -1,14 +1,17 @@
 import requests
+from .base_services import BaseServices
 from whois import extract_domain
 
 
-
-
-class WaybackService():
+class WaybackService(BaseServices):
     def __init__(self):
         self.cdx_api = "http://web.archive.org/cdx/search/cdx"
         self.headers = {"User-Agent": "Mozilla/5.0"}
         pass
+
+    
+    def fetch_service(self, url, depth_data = False):
+        return self.get_wayback(url)
 
 
     def get_count(self, domain: str) -> int:
@@ -58,5 +61,10 @@ class WaybackService():
             # print(f"Error: {e}")  
             return None
 
-# service=WaybackService()
-# print(service.get_wayback("https://claude.ai"))
+
+
+# if __name__=="main":
+#     service=WaybackService()
+#     print(service.get_wayback("https://claude.ai"))
+
+

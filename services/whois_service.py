@@ -1,7 +1,13 @@
 from datetime import datetime, timezone
+from .base_services import BaseServices
 import whois # pip install python-whois
 
-class WhoisService():
+class WhoisService(BaseServices):
+
+    def fetch_service(self, url, depth_data = False):
+        return self.get_whois(url, depth_data)
+
+
     def get_whois(self, url:str, all_data=False):
         try:
             domain=whois.extract_domain(url)

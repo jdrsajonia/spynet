@@ -1,0 +1,720 @@
+{
+    "frontend": {
+        "React": {
+            "html_patterns": [
+                "data-reactroot",
+                "data-reactid",
+                "__reactfiber",
+                "__reactprops"
+            ],
+            "script_patterns": [
+                "react.production.min.js",
+                "react.development.js",
+                "/react@",
+                "react-dom"
+            ],
+            "header_patterns": [],
+            "cookie_patterns": [],
+            "js_patterns": [
+                "__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED",
+                "__reactfiber$",
+                "__reactprops$",
+                "__REACT_DEVTOOLS_GLOBAL_HOOK__",
+                "react.createelement",
+                "react.component",
+                "react.purecomponent",
+                "react.fragment",
+                "schedulermicrotask",
+                "react-dom.production"
+            ],
+            "resource_patterns": [
+                "react.production.min.js",
+                "react-dom.production.min.js",
+                "/react@",
+                "react.min.js"
+            ],
+            "probe_paths": {},
+            "weights": {
+                "html_patterns": 20,
+                "script_patterns": 40,
+                "header_patterns": 0,
+                "cookie_patterns": 0,
+                "js_patterns": 50,
+                "resource_patterns": 35
+            },
+            "threshold": 40
+        },
+        "Vue": {
+            "html_patterns": [
+                "v-cloak",
+                "__vue__",
+                "data-v-",
+                "v-bind:",
+                "v-if=",
+                "v-for="
+            ],
+            "script_patterns": [
+                "vue.min.js",
+                "vue.js",
+                "/vue@",
+                "vue.esm",
+                "vue.runtime"
+            ],
+            "header_patterns": [],
+            "cookie_patterns": [],
+            "js_patterns": [
+                "__vue_app__",
+                "__vue__",
+                "__v_isref",
+                "__v_isreactive",
+                "__v_isreadonly",
+                "vue warn",
+                "defineproperty(exports",
+                "vue.version",
+                "createapp("
+            ],
+            "resource_patterns": [
+                "vue.min.js",
+                "vue.runtime.min.js",
+                "/vue@",
+                "chunk-vendors"
+            ],
+            "probe_paths": {},
+            "weights": {
+                "html_patterns": 20,
+                "script_patterns": 40,
+                "header_patterns": 0,
+                "cookie_patterns": 0,
+                "js_patterns": 50,
+                "resource_patterns": 35
+            },
+            "threshold": 40
+        },
+        "Angular": {
+            "html_patterns": [
+                "ng-version",
+                "ng-app",
+                "_nghost",
+                "_ngcontent",
+                "ng-scope",
+                "ng-controller"
+            ],
+            "script_patterns": [
+                "angular.min.js",
+                "angular.js"
+            ],
+            "header_patterns": [],
+            "cookie_patterns": [],
+            "js_patterns": [
+                "ngmodule",
+                "ngcomponent",
+                "nginjectable",
+                "zone.js",
+                "__zone_symbol__",
+                "ivy_enabled",
+                "\u0275\u0275definecomponent",
+                "\u0275\u0275definengmodule",
+                "platformbrowserdynamic",
+                "ngelement"
+            ],
+            "resource_patterns": [
+                "angular.min.js",
+                "main.js",
+                "runtime.js",
+                "polyfills.js",
+                "vendor.js"
+            ],
+            "probe_paths": {},
+            "weights": {
+                "html_patterns": 40,
+                "script_patterns": 20,
+                "header_patterns": 0,
+                "cookie_patterns": 0,
+                "js_patterns": 50,
+                "resource_patterns": 20
+            },
+            "threshold": 40
+        },
+        "Next.js": {
+            "html_patterns": [
+                "__NEXT_DATA__",
+                "_next/static",
+                "__next",
+                "__NEXT_LOADED_PAGES__"
+            ],
+            "script_patterns": [
+                "/_next/static/",
+                "/_next/chunks/"
+            ],
+            "header_patterns": [
+                "x-powered-by: next.js"
+            ],
+            "cookie_patterns": [],
+            "js_patterns": [
+                "__next_data__",
+                "__next_p(",
+                "__next_f(",
+                "self.__next_f",
+                "__webpack_require__",
+                "__webpack_chunk_load__",
+                "next/router",
+                "next/navigation",
+                "/_next/static/",
+                "nextjs"
+            ],
+            "resource_patterns": [
+                "/_next/static/css/",
+                "/_next/static/chunks/",
+                "/_next/image"
+            ],
+            "probe_paths": {},
+            "weights": {
+                "html_patterns": 40,
+                "script_patterns": 30,
+                "header_patterns": 50,
+                "cookie_patterns": 0,
+                "js_patterns": 50,
+                "resource_patterns": 40
+            },
+            "threshold": 40
+        },
+        "Nuxt.js": {
+            "html_patterns": [
+                "__NUXT__",
+                "_nuxt/",
+                "data-n-head",
+                "__nuxt"
+            ],
+            "script_patterns": [
+                "/_nuxt/",
+                "nuxt.js"
+            ],
+            "header_patterns": [
+                "x-powered-by: nuxt"
+            ],
+            "cookie_patterns": [],
+            "js_patterns": [
+                "window.__nuxt",
+                "__nuxt_app__",
+                "$nuxt",
+                "nuxtapp",
+                "/_nuxt/",
+                "nuxt.js",
+                "__nuxt_island",
+                "useNuxtApp",
+                "defineNuxtPlugin",
+                "defineNuxtComponent"
+            ],
+            "resource_patterns": [
+                "/_nuxt/",
+                "nuxt.js",
+                "/_nuxt/static/"
+            ],
+            "probe_paths": {},
+            "weights": {
+                "html_patterns": 40,
+                "script_patterns": 30,
+                "header_patterns": 50,
+                "cookie_patterns": 0,
+                "js_patterns": 50,
+                "resource_patterns": 40
+            },
+            "threshold": 40
+        }
+    },
+    "backend": {
+        "Django": {
+            "html_patterns": [
+                "csrfmiddlewaretoken",
+                "__admin_media_prefix__",
+                "django-admin"
+            ],
+            "script_patterns": [],
+            "header_patterns": [
+                "x-frame-options: sameorigin",
+                "x-content-type-options: nosniff"
+            ],
+            "cookie_patterns": [
+                "csrftoken",
+                "sessionid"
+            ],
+            "js_patterns": [
+                "django.jquery",
+                "django.urls",
+                "gettext(",
+                "django_admin_log",
+                "rest_framework"
+            ],
+            "resource_patterns": [
+                "/static/admin/",
+                "/static/rest_framework/",
+                "django"
+            ],
+            "probe_paths": {
+                "/admin/": [
+                    "django administration",
+                    "django admin",
+                    "site administration"
+                ],
+                "/robots.txt": [
+                    "disallow: /admin/"
+                ]
+            },
+            "weights": {
+                "html_patterns": 50,
+                "script_patterns": 0,
+                "header_patterns": 20,
+                "cookie_patterns": 30,
+                "js_patterns": 40,
+                "resource_patterns": 20
+            },
+            "threshold": 40
+        },
+        "WordPress": {
+            "html_patterns": [
+                "wp-content",
+                "wp-includes",
+                "wp-json",
+                "/wp-admin",
+                "wp-embed"
+            ],
+            "script_patterns": [
+                "/wp-content/",
+                "/wp-includes/"
+            ],
+            "header_patterns": [
+                "x-powered-by: wp",
+                "x-pingback"
+            ],
+            "cookie_patterns": [
+                "wordpress_",
+                "wp-settings"
+            ],
+            "js_patterns": [
+                "wp.hooks",
+                "wp.blocks",
+                "wp.element",
+                "wp.i18n",
+                "wp.apifetch",
+                "window.wp",
+                "wpemoji",
+                "wp-emoji-release",
+                "jquery.js?ver=",
+                "jquery.min.js?ver=",
+                "woocommerce",
+                "wc_cart_params"
+            ],
+            "resource_patterns": [
+                "/wp-content/themes/",
+                "/wp-content/plugins/",
+                "/wp-includes/js/"
+            ],
+            "probe_paths": {
+                "/wp-json/": [
+                    "namespaces",
+                    "wp/v2",
+                    "authentication"
+                ],
+                "/wp-login.php": [
+                    "user_login",
+                    "wordpress",
+                    "log in"
+                ],
+                "/robots.txt": [
+                    "wp-admin",
+                    "wp-content"
+                ]
+            },
+            "weights": {
+                "html_patterns": 30,
+                "script_patterns": 30,
+                "header_patterns": 40,
+                "cookie_patterns": 30,
+                "js_patterns": 35,
+                "resource_patterns": 35
+            },
+            "threshold": 30
+        },
+        "Laravel": {
+            "html_patterns": [
+                "laravel",
+                "_token"
+            ],
+            "script_patterns": [],
+            "header_patterns": [
+                "x-powered-by: php"
+            ],
+            "cookie_patterns": [
+                "laravel_session",
+                "xsrf-token"
+            ],
+            "js_patterns": [
+                "mix-manifest",
+                "axios.defaults.headers.common",
+                "x-requested-with",
+                "window.laravel",
+                "laravel-echo",
+                "window.echo",
+                "sanctum/csrf-cookie",
+                "livewire",
+                "window.livewire"
+            ],
+            "resource_patterns": [
+                "/css/app.css",
+                "/js/app.js",
+                "mix-manifest.json",
+                "/storage/"
+            ],
+            "probe_paths": {
+                "/robots.txt": [
+                    "storage/",
+                    "/public/"
+                ],
+                "/_ignition/health-check": [
+                    "can_execute_commands"
+                ]
+            },
+            "weights": {
+                "html_patterns": 30,
+                "script_patterns": 0,
+                "header_patterns": 30,
+                "cookie_patterns": 50,
+                "js_patterns": 40,
+                "resource_patterns": 30
+            },
+            "threshold": 40
+        },
+        "Node.js / Express": {
+            "html_patterns": [],
+            "script_patterns": [],
+            "header_patterns": [
+                "x-powered-by: express"
+            ],
+            "cookie_patterns": [
+                "connect.sid"
+            ],
+            "js_patterns": [
+                "require('express')",
+                "require(\"express\")",
+                "process.env.node_env",
+                "__dirname",
+                "__filename",
+                "module.exports"
+            ],
+            "resource_patterns": [
+                "/node_modules/",
+                "bundle.js",
+                "webpack.js"
+            ],
+            "probe_paths": {},
+            "weights": {
+                "html_patterns": 0,
+                "script_patterns": 0,
+                "header_patterns": 60,
+                "cookie_patterns": 40,
+                "js_patterns": 35,
+                "resource_patterns": 20
+            },
+            "threshold": 40
+        },
+        "PHP": {
+            "html_patterns": [],
+            "script_patterns": [
+                ".php"
+            ],
+            "header_patterns": [
+                "x-powered-by: php"
+            ],
+            "cookie_patterns": [
+                "phpsessid"
+            ],
+            "js_patterns": [],
+            "resource_patterns": [
+                ".php",
+                "/index.php",
+                "/wp-"
+            ],
+            "probe_paths": {
+                "/info.php": [
+                    "php version",
+                    "phpinfo"
+                ],
+                "/robots.txt": [
+                    ".php"
+                ]
+            },
+            "weights": {
+                "html_patterns": 0,
+                "script_patterns": 20,
+                "header_patterns": 40,
+                "cookie_patterns": 40,
+                "js_patterns": 0,
+                "resource_patterns": 20
+            },
+            "threshold": 40
+        },
+        "ASP.NET": {
+            "html_patterns": [
+                "__viewstate",
+                "__eventvalidation",
+                "aspnetform"
+            ],
+            "script_patterns": [
+                ".aspx",
+                "webresource.axd"
+            ],
+            "header_patterns": [
+                "x-powered-by: asp.net",
+                "x-aspnet-version"
+            ],
+            "cookie_patterns": [
+                "asp.net_sessionid",
+                ".aspxauth"
+            ],
+            "js_patterns": [
+                "__dopostback(",
+                "webform_",
+                "scriptresource.axd"
+            ],
+            "resource_patterns": [
+                ".aspx",
+                ".axd",
+                "/aspnet_client/"
+            ],
+            "probe_paths": {},
+            "weights": {
+                "html_patterns": 40,
+                "script_patterns": 20,
+                "header_patterns": 50,
+                "cookie_patterns": 30,
+                "js_patterns": 35,
+                "resource_patterns": 25
+            },
+            "threshold": 40
+        }
+    },
+    "cdn": {
+        "Cloudflare": {
+            "header_patterns": [
+                "cf-ray",
+                "cf-cache-status",
+                "server: cloudflare"
+            ],
+            "ns_patterns": [
+                "cloudflare.com"
+            ],
+            "ip_ranges": [
+                "173.245.",
+                "103.21.",
+                "103.22.",
+                "103.31.",
+                "141.101.",
+                "108.162.",
+                "190.93.",
+                "188.114.",
+                "197.234.",
+                "198.41.",
+                "162.158.",
+                "104.16.",
+                "104.17.",
+                "172.64.",
+                "131.0."
+            ],
+            "weights": {
+                "header_patterns": 60,
+                "ns_patterns": 50,
+                "ip_ranges": 30
+            },
+            "threshold": 50
+        },
+        "AWS / Amazon": {
+            "header_patterns": [
+                "x-amz-",
+                "x-amzn-",
+                "server: amazons3",
+                "x-amz-request-id"
+            ],
+            "ns_patterns": [
+                "awsdns",
+                "amazonaws.com"
+            ],
+            "ip_ranges": [
+                "52.",
+                "54.",
+                "18.",
+                "34.",
+                "35."
+            ],
+            "weights": {
+                "header_patterns": 60,
+                "ns_patterns": 50,
+                "ip_ranges": 10
+            },
+            "threshold": 50
+        },
+        "Vercel": {
+            "header_patterns": [
+                "x-vercel-id",
+                "server: vercel",
+                "x-vercel-cache"
+            ],
+            "ns_patterns": [
+                "vercel-dns.com",
+                "ns1.vercel-dns.com"
+            ],
+            "ip_ranges": [
+                "76.76.21.",
+                "76.76.19."
+            ],
+            "weights": {
+                "header_patterns": 70,
+                "ns_patterns": 60,
+                "ip_ranges": 30
+            },
+            "threshold": 60
+        },
+        "Netlify": {
+            "header_patterns": [
+                "x-nf-request-id",
+                "server: netlify",
+                "netlify-vary"
+            ],
+            "ns_patterns": [
+                "netlify.com",
+                "dns1.p01.nsone.net"
+            ],
+            "ip_ranges": [
+                "75.2.",
+                "99.83."
+            ],
+            "weights": {
+                "header_patterns": 70,
+                "ns_patterns": 60,
+                "ip_ranges": 30
+            },
+            "threshold": 60
+        },
+        "GitHub Pages": {
+            "header_patterns": [
+                "x-github-request-id",
+                "server: github.com"
+            ],
+            "ns_patterns": [
+                "github.io"
+            ],
+            "ip_ranges": [
+                "185.199.108.",
+                "185.199.109.",
+                "185.199.110.",
+                "185.199.111."
+            ],
+            "weights": {
+                "header_patterns": 70,
+                "ns_patterns": 60,
+                "ip_ranges": 50
+            },
+            "threshold": 50
+        },
+        "Akamai": {
+            "header_patterns": [
+                "x-akamai-transformed",
+                "x-check-cacheable",
+                "akamai-cache-status",
+                "x-akamai-request-id",
+                "server: akamaighost",
+                "server: akamai"
+            ],
+            "ns_patterns": [
+                "akam.net",
+                "akamaiedge.net",
+                "akamaized.net",
+                "edgesuite.net",
+                "edgekey.net"
+            ],
+            "ip_ranges": [
+                "23.14.",
+                "23.15.",
+                "23.32.",
+                "23.33.",
+                "23.34.",
+                "23.35.",
+                "23.36.",
+                "23.37.",
+                "23.38.",
+                "23.39.",
+                "23.40.",
+                "23.41.",
+                "23.42.",
+                "23.43.",
+                "23.44.",
+                "23.45.",
+                "23.192.",
+                "23.193.",
+                "23.194.",
+                "23.195.",
+                "23.196.",
+                "23.197.",
+                "23.198.",
+                "23.199.",
+                "23.200.",
+                "23.201.",
+                "23.202.",
+                "23.203.",
+                "23.204.",
+                "23.205.",
+                "23.206.",
+                "23.207."
+            ],
+            "weights": {
+                "header_patterns": 60,
+                "ns_patterns": 70,
+                "ip_ranges": 20
+            },
+            "threshold": 50
+        },
+        "Azure / Microsoft": {
+            "header_patterns": [
+                "x-ms-request-id",
+                "x-msedge-ref",
+                "x-azure-ref",
+                "server: microsoft-iis"
+            ],
+            "ns_patterns": [
+                "azure-dns.com",
+                "azure-dns.net",
+                "azure-dns.org",
+                "azure-dns.info",
+                "trafficmanager.net"
+            ],
+            "ip_ranges": [
+                "13.64.",
+                "13.65.",
+                "13.66.",
+                "13.67.",
+                "13.68.",
+                "13.69.",
+                "13.70.",
+                "13.71.",
+                "20.36.",
+                "20.37.",
+                "20.38.",
+                "20.39.",
+                "20.40.",
+                "40.64.",
+                "40.65.",
+                "40.66.",
+                "40.67.",
+                "40.68.",
+                "40.69.",
+                "40.70.",
+                "40.71."
+            ],
+            "weights": {
+                "header_patterns": 60,
+                "ns_patterns": 70,
+                "ip_ranges": 15
+            },
+            "threshold": 50
+        }
+    }
+}

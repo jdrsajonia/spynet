@@ -1,10 +1,16 @@
 import requests # pip install requests
+from .base_services import BaseServices
 from whois import extract_domain
 
-class GeoService():
+class GeoService(BaseServices):
     def __init__(self):
         self.api_endpoint="http://ip-api.com/json/" # no se necesita api_key
+
+
+    def fetch_service(self, url, depth_data = False):
+        return self.get_geoinfo(url, depth_data)
     
+
     def get_geoinfo(self, url, all_data=False):
         try:
             domain=extract_domain(url)
