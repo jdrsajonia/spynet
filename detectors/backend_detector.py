@@ -1,4 +1,7 @@
+import logging
 from .base_detector import BaseDetector
+
+logger = logging.getLogger("spynet.detectors.backend")
 
 
 class BackendDetector(BaseDetector):
@@ -23,6 +26,8 @@ class BackendDetector(BaseDetector):
         res_combined = " ".join(resources or []).lower()
         # probe_responses: { "/ruta/": "contenido de la respuesta" }
         probe_combined = " ".join((probe_responses or {}).values()).lower()
+
+        logger.debug("Running backend detection against %d signatures", len(self.signatures))
 
         for tech, sig in self.signatures.items():
             score    = 0
@@ -84,6 +89,8 @@ class BackendDetector(BaseDetector):
                                 evidence.append(f"ruta '{path}' contiene '{indicator}'")
 
             if score >= sig["threshold"] and evidence:
+                logger.info("Backend detected: %s (score=%d, threshold=%d)", tech, score, sig["threshold"])
                 results.append(self._build_result(tech, "backend", score, evidence))
 
+        logger.debug("Backend detection complete: %d technologies found", len(results))
         return results

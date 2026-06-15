@@ -1,5 +1,8 @@
+import logging
 import requests
 from urllib.parse import urljoin
+
+logger = logging.getLogger("spynet.core")
 
 MAX_JS_SIZE    = 500_000   # 500 KB por archivo — evita descargar bundles enormes
 MAX_JS_FILES   = 3         # máximo de archivos JS a descargar por análisis
@@ -44,6 +47,7 @@ def fetch_js_contents(base_url: str, script_srcs: list[str]) -> list[str]:
         return []
 
     candidates = _prioritize(script_srcs)
+    logger.debug("JS fetcher: %d candidates after prioritization (from %d srcs)", len(candidates), len(script_srcs))
     contents   = []
 
     for src in candidates[:MAX_JS_FILES * 2]:  # intentamos más de los que necesitamos por si fallan
@@ -51,8 +55,10 @@ def fetch_js_contents(base_url: str, script_srcs: list[str]) -> list[str]:
             break
         content = _download(src, base_url)
         if content:
+            logger.debug("Downloaded JS: %s (%d chars)", src[:80], len(content))
             contents.append(content)
 
+    logger.debug("JS fetcher complete: %d/%d files downloaded", len(contents), MAX_JS_FILES)
     return contents
 
 
@@ -106,10 +112,12 @@ def _download(src: str, base_url: str) -> str | None:
         )
 
         if response.status_code != 200:
+            logger.debug("JS download skipped (HTTP %d): %s", response.status_code, url[:80])
             return None
 
         content_type = response.headers.get("content-type", "")
         if "javascript" not in content_type and "text" not in content_type:
+            logger.debug("JS download skipped (content-type=%s): %s", content_type, url[:80])
             return None
 
         # Leer con límite de tamaño
@@ -120,10 +128,12 @@ def _download(src: str, base_url: str) -> str | None:
                 chunk = chunk.decode("utf-8", errors="ignore")
             size += len(chunk)
             if size > MAX_JS_SIZE:
+                logger.warning("JS file exceeds size limit (%d KB), skipping: %s", MAX_JS_SIZE // 1024, url[:80])
                 return None  # archivo demasiado grande, saltarlo
             chunks.append(chunk)
 
         return "".join(chunks)
 
-    except Exception:
+    except Exception as exc:
+        logger.debug("JS download failed for %s: %s", url[:80], exc)
         return None

@@ -1,4 +1,7 @@
+import logging
 from .base_detector import BaseDetector
+
+logger = logging.getLogger("spynet.detectors.cdn")
 
 
 class CDNDetector(BaseDetector):
@@ -22,6 +25,11 @@ class CDNDetector(BaseDetector):
         headers_lower = {k.lower(): v.lower() for k, v in headers.items()}
         ns_lower = [ns.lower() for ns in (nameservers or [])]
         ip = server_ip or ""
+
+        logger.debug(
+            "Running CDN detection against %d signatures (ip=%s, ns=%d)",
+            len(self.signatures), ip or "unknown", len(ns_lower)
+        )
 
         for tech_name, sig in self.signatures.items():
             score = 0
@@ -57,6 +65,8 @@ class CDNDetector(BaseDetector):
                     evidence.append(f"IP {ip} pertenece al rango de {tech_name}")
 
             if score >= sig["threshold"] and evidence:
+                logger.info("CDN detected: %s (score=%d, threshold=%d)", tech_name, score, sig["threshold"])
                 results.append(self._build_result(tech_name, "cdn", score, evidence))
 
+        logger.debug("CDN detection complete: %d providers found", len(results))
         return results

@@ -1,6 +1,10 @@
+import logging
 import dns.resolver #pip install dnspython
 from .base_services import BaseServices
 from whois import extract_domain
+
+logger = logging.getLogger("spynet.services.dns")
+
 
 class DnsRecordService(BaseServices):
 
@@ -10,24 +14,34 @@ class DnsRecordService(BaseServices):
 
     def get_dns_records(self, url: str) -> dict:
         try:
-            domain=extract_domain(url)
-            records={
+            domain = extract_domain(url)
+            logger.info("DNS lookup for domain: %s", domain)
+            records = {
                 "A":[],
                 "AAAA":[],
                 "CNAME":[],
                 "NS":[],
                 "MX":[]
             }
-            
-            keys=records.keys()
-            for type_record in keys:
+
+            for type_record in records.keys():
                 try:
-                    answers=dns.resolver.resolve(domain, type_record)
+                    answers = dns.resolver.resolve(domain, type_record)
                     records[type_record] = [str(r) for r in answers]
+                    logger.debug("DNS %s records for %s: %s", type_record, domain, records[type_record])
                 except Exception:
                     pass
+
+            logger.info(
+                "DNS lookup complete for %s: A=%d NS=%d MX=%d",
+                domain,
+                len(records["A"]),
+                len(records["NS"]),
+                len(records["MX"]),
+            )
             return records
-        except Exception:
+        except Exception as exc:
+            logger.error("DNS lookup failed for %s: %s", url, exc)
             return None
 
 

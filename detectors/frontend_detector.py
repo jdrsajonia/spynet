@@ -1,4 +1,7 @@
+import logging
 from .base_detector import BaseDetector
+
+logger = logging.getLogger("spynet.detectors.frontend")
 
 
 class FrontendDetector(BaseDetector):
@@ -20,6 +23,8 @@ class FrontendDetector(BaseDetector):
         scripts_low  = [s.lower() for s in scripts]
         js_combined  = " ".join(js_contents or []).lower()
         res_combined = " ".join(resources or []).lower()
+
+        logger.debug("Running frontend detection against %d signatures", len(self.signatures))
 
         for tech, sig in self.signatures.items():
             score    = 0
@@ -63,6 +68,8 @@ class FrontendDetector(BaseDetector):
                         evidence.append(f"recurso '{p}' encontrado")
 
             if score >= sig["threshold"] and evidence:
+                logger.info("Frontend detected: %s (score=%d, threshold=%d)", tech, score, sig["threshold"])
                 results.append(self._build_result(tech, "frontend", score, evidence))
 
+        logger.debug("Frontend detection complete: %d technologies found", len(results))
         return results

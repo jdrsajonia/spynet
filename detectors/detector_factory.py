@@ -1,8 +1,11 @@
+import logging
 from .frontend_detector import FrontendDetector
 from .backend_detector import BackendDetector
 from .cdn_detector import CDNDetector
 from .base_detector import BaseDetector
 from core.signature_loader import SignatureLoader
+
+logger = logging.getLogger("spynet.detectors")
 
 
 class DetectorFactory:
@@ -43,10 +46,12 @@ class DetectorFactory:
         """
         detector_class = self._registry.get(category)
         if not detector_class:
+            logger.error("Unknown detector category requested: '%s'", category)
             raise ValueError(f"Categoría de detector desconocida: '{category}'. "
                              f"Disponibles: {list(self._registry.keys())}")
 
         signatures = self._loader.get(category)
+        logger.debug("Created %s detector with %d signatures", category, len(signatures))
         return detector_class(signatures)
 
     def create_all(self) -> dict[str, BaseDetector]:

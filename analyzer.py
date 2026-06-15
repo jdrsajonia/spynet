@@ -1,6 +1,7 @@
 import re
 import sys
 import os
+import logging
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
@@ -15,6 +16,8 @@ from services.dns_service import DnsRecordService
 from services.geo_service import GeoService
 from services.whois_service import WhoisService
 from services.wayback_service import WaybackService
+
+logger = logging.getLogger("spynet.analyzer")
 
 
 class Analyzer:  # patrón Facade
@@ -44,6 +47,7 @@ class Analyzer:  # patrón Facade
         self._whois   = WhoisService()
         self._wayback = WaybackService()
         self._probe_paths = self._collect_probe_paths()
+        logger.debug("Analyzer initialized with %d probe paths", len(self._probe_paths))
 
     # ──────────────────────────────────────────────────────────────────────
     # Análisis completo
@@ -51,6 +55,7 @@ class Analyzer:  # patrón Facade
 
     def analyze(self, url: str, depth_data: bool = False) -> dict:
         url = self._normalize_url(url)
+        logger.info("Starting analysis for %s", url)
 
         # 1. Servicios de infraestructura — CDNDetector reutiliza NS e IP
         dns_data   = self._dns.fetch_service(url)
@@ -67,7 +72,13 @@ class Analyzer:  # patrón Facade
             ns_list   = (dns_data or {}).get("NS", [])
             server_ip = (geo_data or {}).get("ip", "")
             technologies = self._run_detectors(page, url, ns_list, server_ip)
+        else:
+            logger.warning("No page content retrieved for %s — skipping technology detection", url)
 
+        logger.info(
+            "Analysis complete for %s: %d technologies detected",
+            url, len(technologies)
+        )
         return {
             "url":          url,
             "technologies": technologies,
@@ -88,8 +99,10 @@ class Analyzer:  # patrón Facade
         Excluye CDNDetector, DNS, WHOIS, Geo y Wayback por definición.
         No aplica sondeo de rutas ni descarga JS — el snapshot es solo HTML.
         """
+        logger.info("Analyzing Wayback snapshot: %s", snapshot_url)
         page = self._fetch_page(snapshot_url)
         if not page:
+            logger.warning("Could not fetch snapshot: %s", snapshot_url)
             return None
 
         detectors    = self._factory.create_all()
@@ -99,6 +112,10 @@ class Analyzer:  # patrón Facade
         )
         technologies += detectors["backend"].detect(
             page["html"], page["headers"], page["scripts"], page["cookies"]
+        )
+        logger.info(
+            "Snapshot analysis complete for %s: %d technologies detected",
+            snapshot_url, len(technologies)
         )
         return {"snapshot_url": snapshot_url, "technologies": technologies}
 
@@ -116,13 +133,18 @@ class Analyzer:  # patrón Facade
         cookies = page["cookies"]
 
         # Estrategia 2: descargar contenido de archivos JS
+        logger.debug("Strategy 2: downloading JS files (%d script srcs)", len(scripts))
         js_contents = fetch_js_contents(base_url, scripts)
+        logger.debug("Strategy 2: downloaded %d JS files", len(js_contents))
 
         # Estrategia 3: sondear rutas conocidas
+        logger.debug("Strategy 3: probing %d known paths", len(self._probe_paths))
         probe_responses = self._probe_paths_request(base_url)
+        logger.debug("Strategy 3: %d probe paths responded with 200", len(probe_responses))
 
         # Estrategia 5: extraer rutas de recursos estáticos
         resources = self._extract_resources(html, base_url)
+        logger.debug("Strategy 5: extracted %d static resources", len(resources))
 
         detectors = self._factory.create_all()
         results   = []
@@ -161,8 +183,9 @@ class Analyzer:  # patrón Facade
                 )
                 if r.status_code == 200:
                     responses[path] = r.text[:5000]  # limitar tamaño
-            except Exception:
-                pass
+                    logger.debug("Probe hit: %s returned 200", path)
+            except Exception as exc:
+                logger.debug("Probe failed for %s: %s", path, exc)
         return responses
 
     def _extract_resources(self, html: str, base_url: str) -> list[str]:
@@ -187,7 +210,8 @@ class Analyzer:  # patrón Facade
                 resources.append(tag["src"])
 
             return resources
-        except Exception:
+        except Exception as exc:
+            logger.warning("Resource extraction failed for %s: %s", base_url, exc)
             return []
 
     def _collect_probe_paths(self) -> list[str]:
@@ -210,6 +234,7 @@ class Analyzer:  # patrón Facade
         return url
 
     def _fetch_page(self, url: str) -> dict | None:
+        logger.debug("Fetching page: %s", url)
         try:
             response = requests.get(
                 url,
@@ -221,15 +246,21 @@ class Analyzer:  # patrón Facade
             headers = dict(response.headers)
             cookies = {c.name: c.value for c in response.cookies}
             scripts = self._extract_scripts(html)
+            logger.debug(
+                "Page fetched: status=%d, html_len=%d, scripts=%d, cookies=%d",
+                response.status_code, len(html), len(scripts), len(cookies)
+            )
             return {"html": html, "headers": headers, "cookies": cookies, "scripts": scripts}
-        except Exception:
+        except Exception as exc:
+            logger.error("Failed to fetch page %s: %s", url, exc)
             return None
 
     def _extract_scripts(self, html: str) -> list[str]:
         try:
             soup = BeautifulSoup(html, "html.parser")
             return [tag["src"] for tag in soup.find_all("script", src=True)]
-        except Exception:
+        except Exception as exc:
+            logger.warning("BeautifulSoup script extraction failed, falling back to regex: %s", exc)
             return re.findall(r'<script[^>]+src=["\']([^"\']+)["\']', html, re.IGNORECASE)
 
 
