@@ -1,6 +1,6 @@
 # Welcome to Spynet
 
-![banner](img/spynet_penguins.png)
+![banner](assets/img/spynet_penguins.png)
 
 **Spynet** is a web application designed to analyze and map the technologies used by websites. It allows users to inspect, compare, and understand the technical composition of different web pages in a structured way.
 
@@ -70,7 +70,7 @@ Preview available at: https://jdrsajonia.github.io
 ---
 
 <p align="center">
-  <img src="img/tux_spynet_profesional.png" width="120"/>
+  <img src="assets/img/tux_spynet_profesional.png" width="120"/>
 </p>
 
 <p align="center">
