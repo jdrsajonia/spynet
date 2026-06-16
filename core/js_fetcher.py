@@ -2,18 +2,9 @@ import logging
 import requests
 from urllib.parse import urljoin
 
-logger = logging.getLogger("spynet.core")
+from config.settings import DEFAULT_HEADERS, JS_FETCH_TIMEOUT, MAX_JS_FILES, MAX_JS_SIZE
 
-MAX_JS_SIZE    = 500_000   # 500 KB por archivo — evita descargar bundles enormes
-MAX_JS_FILES   = 3         # máximo de archivos JS a descargar por análisis
-TIMEOUT        = 6
-DEFAULT_HEADERS = {
-    "User-Agent": (
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-        "AppleWebKit/537.36 (KHTML, like Gecko) "
-        "Chrome/124.0.0.0 Safari/537.36"
-    )
-}
+logger = logging.getLogger("spynet.core")
 
 # Patrones en el nombre del archivo que sugieren que vale la pena descargar
 PRIORITY_KEYWORDS = [
@@ -107,7 +98,7 @@ def _download(src: str, base_url: str) -> str | None:
         response = requests.get(
             url,
             headers=DEFAULT_HEADERS,
-            timeout=TIMEOUT,
+            timeout=JS_FETCH_TIMEOUT,
             stream=True   # stream para verificar tamaño antes de leer todo
         )
 
