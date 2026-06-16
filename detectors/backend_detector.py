@@ -1,5 +1,6 @@
 import logging
 from .base_detector import BaseDetector
+from config.settings import PROBE_PATH_SCORE
 
 logger = logging.getLogger("spynet.detectors.backend")
 
@@ -85,7 +86,7 @@ class BackendDetector(BaseDetector):
                     if path_response:
                         for indicator in indicators:
                             if indicator.lower() in path_response:
-                                score += 60  # señal fuerte — ruta específica confirmada
+                                score += PROBE_PATH_SCORE
                                 evidence.append(f"ruta '{path}' contiene '{indicator}'")
 
             if score >= sig["threshold"] and evidence:

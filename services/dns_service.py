@@ -8,7 +8,7 @@ logger = logging.getLogger("spynet.services.dns")
 
 class DnsRecordService(BaseServices):
 
-    def fetch_service(self, url, depth_data = False):
+    def fetch_service(self, url: str, _depth_data: bool = False) -> dict | None:
         return self.get_dns_records(url)
 
 

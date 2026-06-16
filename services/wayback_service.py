@@ -12,7 +12,7 @@ class WaybackService(BaseServices):
         self.headers = {"User-Agent": "Mozilla/5.0"}
 
 
-    def fetch_service(self, url, depth_data = False):
+    def fetch_service(self, url, _depth_data=False):
         return self.get_wayback(url)
 
 
@@ -23,8 +23,11 @@ class WaybackService(BaseServices):
             "showNumPages": True
         }, headers=self.headers, timeout=15)
 
-        data = response.json()
-        return int(data[1][0])
+        try:
+            data = response.json()
+            return int(data[1][0])
+        except (IndexError, ValueError, KeyError):
+            return 0
 
 
     def get_snapshots(self, domain: str) -> list:
@@ -43,6 +46,8 @@ class WaybackService(BaseServices):
 
         snapshots = []
         for row in data[1:]:
+            if len(row) != 2:
+                continue
             timestamp, original = row
             snapshots.append({
                 "timestamp": timestamp,

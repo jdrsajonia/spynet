@@ -2,6 +2,7 @@ import re
 import sys
 import os
 import logging
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
@@ -11,6 +12,7 @@ from urllib.parse import urljoin
 
 from core.js_fetcher import fetch_js_contents
 from core.signature_loader import SignatureLoader
+from config.settings import DEFAULT_HEADERS, REQUEST_TIMEOUT, PROBE_TIMEOUT
 from detectors.detector_factory import DetectorFactory
 from services.dns_service import DnsRecordService
 from services.geo_service import GeoService
@@ -25,20 +27,12 @@ class Analyzer:  # patrón Facade
     Orquesta todos los servicios y detectores desde un único punto de entrada.
 
     Estrategias de detección aplicadas:
-      1. Pattern matching sobre HTML, headers, cookies, script src  (original)
-      2. Análisis de contenido de archivos JS descargados           (nuevo)
-      3. Sondeo de rutas conocidas (/wp-json/, /admin/, etc.)       (nuevo)
-      5. Análisis de rutas de recursos estáticos (CSS/JS/imágenes)  (nuevo)
+      1. Pattern matching sobre HTML, headers, cookies, script src
+      2. Análisis de contenido de archivos JS descargados
+      3. Sondeo de rutas conocidas (/wp-json/, /admin/, etc.)
+      4. Señales de DNS/IP reutilizadas por CDNDetector
+      5. Análisis de rutas de recursos estáticos (CSS/JS/imágenes)
     """
-
-    TIMEOUT = 10
-    DEFAULT_HEADERS = {
-        "User-Agent": (
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-            "AppleWebKit/537.36 (KHTML, like Gecko) "
-            "Chrome/124.0.0.0 Safari/537.36"
-        )
-    }
 
     def __init__(self):
         self._factory = DetectorFactory()
@@ -57,11 +51,17 @@ class Analyzer:  # patrón Facade
         url = self._normalize_url(url)
         logger.info("Starting analysis for %s", url)
 
-        # 1. Servicios de infraestructura — CDNDetector reutiliza NS e IP
-        dns_data   = self._dns.fetch_service(url)
-        geo_data   = self._geo.fetch_service(url, depth_data)
-        whois_data = self._whois.fetch_service(url, depth_data)
-        wayback    = self._wayback.fetch_service(url)
+        # 1. Servicios de infraestructura (concurrentes) — CDNDetector reutiliza NS e IP
+        with ThreadPoolExecutor(max_workers=4) as executor:
+            future_dns    = executor.submit(self._dns.fetch_service, url)
+            future_geo    = executor.submit(self._geo.fetch_service, url, depth_data)
+            future_whois  = executor.submit(self._whois.fetch_service, url, depth_data)
+            future_wayback = executor.submit(self._wayback.fetch_service, url)
+
+        dns_data   = future_dns.result()
+        geo_data   = future_geo.result()
+        whois_data = future_whois.result()
+        wayback    = future_wayback.result()
 
         # 2. Petición HTTP principal al sitio
         page = self._fetch_page(url)
@@ -108,10 +108,11 @@ class Analyzer:  # patrón Facade
         detectors    = self._factory.create_all()
         technologies = []
         technologies += detectors["frontend"].detect(
-            page["html"], page["headers"], page["scripts"]
+            html=page["html"], headers=page["headers"], scripts=page["scripts"]
         )
         technologies += detectors["backend"].detect(
-            page["html"], page["headers"], page["scripts"], page["cookies"]
+            html=page["html"], headers=page["headers"],
+            scripts=page["scripts"], cookies=page["cookies"]
         )
         logger.info(
             "Snapshot analysis complete for %s: %d technologies detected",
@@ -164,7 +165,22 @@ class Analyzer:  # patrón Facade
             html, headers, scripts, ns_list, server_ip
         )
 
-        return results
+        return self._deduplicate(results)
+
+    def _deduplicate(self, technologies: list[dict]) -> list[dict]:
+        """Merge entries with the same name, keeping the highest confidence and all evidence."""
+        seen: dict[str, dict] = {}
+        for tech in technologies:
+            name = tech["name"]
+            if name not in seen:
+                seen[name] = dict(tech)
+            else:
+                existing = seen[name]
+                if tech["confidence"] > existing["confidence"]:
+                    existing["confidence"] = tech["confidence"]
+                if tech["evidence"] not in existing["evidence"]:
+                    existing["evidence"] += "; " + tech["evidence"]
+        return list(seen.values())
 
     def _probe_paths_request(self, base_url: str) -> dict:
         """
@@ -177,8 +193,8 @@ class Analyzer:  # patrón Facade
                 url = urljoin(base_url, path)
                 r   = requests.get(
                     url,
-                    headers=self.DEFAULT_HEADERS,
-                    timeout=5,
+                    headers=DEFAULT_HEADERS,
+                    timeout=PROBE_TIMEOUT,
                     allow_redirects=False   # no seguir redirects — un 301 a /login no es wp-json
                 )
                 if r.status_code == 200:
@@ -229,7 +245,9 @@ class Analyzer:  # patrón Facade
 
     def _normalize_url(self, url: str) -> str:
         url = url.strip()
-        if not url.startswith(("http://", "https://")):
+        if url.startswith("//"):
+            url = "https:" + url
+        elif not url.startswith(("http://", "https://")):
             url = "https://" + url
         return url
 
@@ -238,8 +256,8 @@ class Analyzer:  # patrón Facade
         try:
             response = requests.get(
                 url,
-                headers=self.DEFAULT_HEADERS,
-                timeout=self.TIMEOUT,
+                headers=DEFAULT_HEADERS,
+                timeout=REQUEST_TIMEOUT,
                 allow_redirects=True
             )
             html    = response.text

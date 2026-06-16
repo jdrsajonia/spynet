@@ -19,7 +19,7 @@ class GeoService(BaseServices):
         try:
             domain = extract_domain(url)
             logger.info("Geo lookup for domain: %s", domain)
-            response = requests.get(self.api_endpoint + domain)
+            response = requests.get(self.api_endpoint + domain, timeout=10)
             data = response.json()
 
             if data.get("status") == "fail":

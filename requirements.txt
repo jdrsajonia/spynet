@@ -1,3 +1,4 @@
-python-whois
-requests
-dnspython
+beautifulsoup4>=4.12,<5
+requests>=2.31,<3
+dnspython>=2.4,<3
+python-whois>=0.9,<1
