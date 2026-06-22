@@ -36,19 +36,8 @@ class CDNDetector(BaseDetector):
             evidence = []
 
             # ── Señales en headers HTTP ───────────────────────────────────
-            w_header = sig["weights"]["header_patterns"]
-            for pattern in sig["header_patterns"]:
-                key, _, value = pattern.partition(": ")
-                header_val = headers_lower.get(key.lower(), "")
-                # patrón tipo "cf-ray" (solo clave, sin valor específico)
-                if value:
-                    if value.lower() in header_val:
-                        score += w_header
-                        evidence.append(f"header '{pattern}' presente")
-                else:
-                    if key.lower() in headers_lower:
-                        score += w_header
-                        evidence.append(f"header '{key}' presente")
+            s, e = self._scan_headers(sig["header_patterns"], sig["weights"]["header_patterns"], headers_lower)
+            score += s; evidence += e
 
             # ── Señales en nameservers DNS ────────────────────────────────
             w_ns = sig["weights"]["ns_patterns"]

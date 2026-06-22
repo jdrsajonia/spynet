@@ -54,6 +54,46 @@ class BaseDetector(ABC):
             (not value and key.lower() in headers_lower)
         )
 
+    def _scan_text(
+        self,
+        patterns: list[str],
+        weight: int,
+        haystack: str,
+        prefix: str,
+        suffix: str = "",
+    ) -> tuple[int, list[str]]:
+        """
+        Estrategia compartida de substring-match: suma `weight` por cada patrón
+        presente en `haystack` (ya en minúsculas) y construye su evidencia.
+        Usada por todos los detectores para HTML, script src, JS, recursos y cookies.
+        """
+        score: int = 0
+        evidence: list[str] = []
+        if not weight or not haystack:
+            return score, evidence
+        for p in patterns:
+            if p.lower() in haystack:
+                score += weight
+                evidence.append(f"{prefix}{p}{suffix}")
+        return score, evidence
+
+    def _scan_headers(
+        self,
+        patterns: list[str],
+        weight: int,
+        headers_lower: dict,
+    ) -> tuple[int, list[str]]:
+        """Match de headers reutilizando _match_header (clave-sola o 'clave: valor')."""
+        score: int = 0
+        evidence: list[str] = []
+        if not weight:
+            return score, evidence
+        for p in patterns:
+            if self._match_header(p, headers_lower):
+                score += weight
+                evidence.append(f"header '{p}' presente")
+        return score, evidence
+
     def _score_to_confidence(self, score: int) -> int:
         return min(score, 100)
 
