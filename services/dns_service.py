@@ -43,7 +43,3 @@ class DnsRecordService(BaseServices):
         except Exception as exc:
             logger.error("DNS lookup failed for %s: %s", url, exc)
             return None
-
-
-# service=DnsRecordService()
-# print(service.get_dns_records("https://claude.ai"))

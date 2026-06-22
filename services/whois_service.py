@@ -51,7 +51,3 @@ class WhoisService(BaseServices):
         except Exception as exc:
             logger.error("WHOIS lookup failed for %s: %s", url, exc)
             return None  #RF-14
-
-# service=WhoisService()
-# print(service.get_whois("https://claude.ai/chat/0e5c59f3-bfbd-44c1-9575-d246df9608ed", True))
-# print(service.get_whois("httpsd246df9608ed"))

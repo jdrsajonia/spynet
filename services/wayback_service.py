@@ -71,11 +71,3 @@ class WaybackService(BaseServices):
         except Exception as exc:
             logger.error("Wayback lookup failed for %s: %s", url, exc)
             return None
-
-
-
-# if __name__=="main":
-#     service=WaybackService()
-#     print(service.get_wayback("https://claude.ai"))
-
-

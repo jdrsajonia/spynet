@@ -19,7 +19,7 @@ SKIP_KEYWORDS = [
 ]
 
 
-def fetch_js_contents(base_url: str, script_srcs: list[str]) -> list[str]:
+def fetch_js_contents(base_url: str, script_srcs: list[str], session=None) -> list[str]:
     """
     Descarga hasta MAX_JS_FILES archivos JS y retorna su contenido como texto.
 
@@ -29,6 +29,8 @@ def fetch_js_contents(base_url: str, script_srcs: list[str]) -> list[str]:
     Args:
         base_url:    URL base del sitio para resolver rutas relativas
         script_srcs: lista de valores src de etiquetas <script>
+        session:     requests.Session opcional para reutilizar conexiones.
+                     Si es None se usa el módulo requests directamente.
 
     Returns:
         Lista de strings con el contenido de cada archivo descargado.
@@ -37,6 +39,7 @@ def fetch_js_contents(base_url: str, script_srcs: list[str]) -> list[str]:
     if not script_srcs:
         return []
 
+    http = session or requests
     candidates = _prioritize(script_srcs)
     logger.debug("JS fetcher: %d candidates after prioritization (from %d srcs)", len(candidates), len(script_srcs))
     contents   = []
@@ -44,7 +47,7 @@ def fetch_js_contents(base_url: str, script_srcs: list[str]) -> list[str]:
     for src in candidates[:MAX_JS_FILES * 2]:  # intentamos más de los que necesitamos por si fallan
         if len(contents) >= MAX_JS_FILES:
             break
-        content = _download(src, base_url)
+        content = _download(src, base_url, http)
         if content:
             logger.debug("Downloaded JS: %s (%d chars)", src[:80], len(content))
             contents.append(content)
@@ -87,15 +90,17 @@ def _is_same_origin_hint(url: str) -> bool:
     return any(h in url for h in framework_hints)
 
 
-def _download(src: str, base_url: str) -> str | None:
+def _download(src: str, base_url: str, http=requests) -> str | None:
     """
     Descarga un archivo JS. Respeta el límite de tamaño y el timeout.
     Retorna None si falla o excede el tamaño máximo.
+
+    `http` puede ser una requests.Session (connection pooling) o el módulo requests.
     """
     try:
         url = urljoin(base_url, src) if not src.startswith("http") else src
 
-        response = requests.get(
+        response = http.get(
             url,
             headers=DEFAULT_HEADERS,
             timeout=JS_FETCH_TIMEOUT,

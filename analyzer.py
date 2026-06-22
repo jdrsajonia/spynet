@@ -40,6 +40,8 @@ class Analyzer:  # patrón Facade
         self._geo     = GeoService()
         self._whois   = WhoisService()
         self._wayback = WaybackService()
+        self._session = requests.Session()
+        self._session.headers.update(DEFAULT_HEADERS)
         self._probe_paths = self._collect_probe_paths()
         logger.debug("Analyzer initialized with %d probe paths", len(self._probe_paths))
 
@@ -135,7 +137,7 @@ class Analyzer:  # patrón Facade
 
         # Estrategia 2: descargar contenido de archivos JS
         logger.debug("Strategy 2: downloading JS files (%d script srcs)", len(scripts))
-        js_contents = fetch_js_contents(base_url, scripts)
+        js_contents = fetch_js_contents(base_url, scripts, session=self._session)
         logger.debug("Strategy 2: downloaded %d JS files", len(js_contents))
 
         # Estrategia 3: sondear rutas conocidas
@@ -143,8 +145,8 @@ class Analyzer:  # patrón Facade
         probe_responses = self._probe_paths_request(base_url)
         logger.debug("Strategy 3: %d probe paths responded with 200", len(probe_responses))
 
-        # Estrategia 5: extraer rutas de recursos estáticos
-        resources = self._extract_resources(html, base_url)
+        # Estrategia 5: extraer rutas de recursos estáticos (reutiliza el soup ya parseado)
+        resources = self._extract_resources(page.get("soup"), base_url)
         logger.debug("Strategy 5: extracted %d static resources", len(resources))
 
         detectors = self._factory.create_all()
@@ -191,9 +193,8 @@ class Analyzer:  # patrón Facade
         for path in self._probe_paths:
             try:
                 url = urljoin(base_url, path)
-                r   = requests.get(
+                r   = self._session.get(
                     url,
-                    headers=DEFAULT_HEADERS,
                     timeout=PROBE_TIMEOUT,
                     allow_redirects=False   # no seguir redirects — un 301 a /login no es wp-json
                 )
@@ -204,12 +205,13 @@ class Analyzer:  # patrón Facade
                 logger.debug("Probe failed for %s: %s", path, exc)
         return responses
 
-    def _extract_resources(self, html: str, base_url: str) -> list[str]:
+    def _extract_resources(self, soup: BeautifulSoup | None, base_url: str) -> list[str]:
         """
-        Estrategia 5: extrae rutas de CSS, imágenes y scripts del HTML.
+        Estrategia 5: extrae rutas de CSS, imágenes y scripts del soup ya parseado.
         """
+        if soup is None:
+            return []
         try:
-            soup      = BeautifulSoup(html, "html.parser")
             resources = []
 
             for tag in soup.find_all("link", rel=lambda r: r and "stylesheet" in r):
@@ -254,35 +256,37 @@ class Analyzer:  # patrón Facade
     def _fetch_page(self, url: str) -> dict | None:
         logger.debug("Fetching page: %s", url)
         try:
-            response = requests.get(
+            response = self._session.get(
                 url,
-                headers=DEFAULT_HEADERS,
                 timeout=REQUEST_TIMEOUT,
                 allow_redirects=True
             )
             html    = response.text
             headers = dict(response.headers)
             cookies = {c.name: c.value for c in response.cookies}
-            scripts = self._extract_scripts(html)
+            # El HTML se parsea una sola vez aquí; el soup se reutiliza para scripts y recursos.
+            soup    = self._make_soup(html)
+            scripts = self._extract_scripts(soup, html)
             logger.debug(
                 "Page fetched: status=%d, html_len=%d, scripts=%d, cookies=%d",
                 response.status_code, len(html), len(scripts), len(cookies)
             )
-            return {"html": html, "headers": headers, "cookies": cookies, "scripts": scripts}
+            return {"html": html, "headers": headers, "cookies": cookies, "scripts": scripts, "soup": soup}
         except Exception as exc:
             logger.error("Failed to fetch page %s: %s", url, exc)
             return None
 
-    def _extract_scripts(self, html: str) -> list[str]:
+    def _make_soup(self, html: str) -> BeautifulSoup | None:
         try:
-            soup = BeautifulSoup(html, "html.parser")
-            return [tag["src"] for tag in soup.find_all("script", src=True)]
+            return BeautifulSoup(html, "html.parser")
         except Exception as exc:
-            logger.warning("BeautifulSoup script extraction failed, falling back to regex: %s", exc)
-            return re.findall(r'<script[^>]+src=["\']([^"\']+)["\']', html, re.IGNORECASE)
+            logger.warning("BeautifulSoup parsing failed: %s", exc)
+            return None
 
-
-if __name__ == "__main__":
-    import json
-    result = Analyzer().analyze("pivigames.blog")
-    print(json.dumps(result, indent=2, ensure_ascii=False, default=str))
+    def _extract_scripts(self, soup: BeautifulSoup | None, html: str) -> list[str]:
+        if soup is not None:
+            try:
+                return [tag["src"] for tag in soup.find_all("script", src=True)]
+            except Exception as exc:
+                logger.warning("BeautifulSoup script extraction failed, falling back to regex: %s", exc)
+        return re.findall(r'<script[^>]+src=["\']([^"\']+)["\']', html, re.IGNORECASE)

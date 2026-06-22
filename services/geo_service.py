@@ -44,9 +44,3 @@ class GeoService(BaseServices):
         except Exception as exc:
             logger.error("Geo lookup failed for %s: %s", url, exc)
             return None  #RF-14
-
-# service=GeoService()
-
-# print(service.get_geoinfo("https://claude.ai/chat/0e5c59f3-bfbd-44c1-9575-d246df9608ed", True))
-# print(service.get_geoinfo("google.com"))
-# print(service.get_geoinfo("googasdfasdle.com"))
