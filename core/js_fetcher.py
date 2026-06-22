@@ -94,8 +94,6 @@ def _download(src: str, base_url: str, http=requests) -> str | None:
     """
     Descarga un archivo JS. Respeta el límite de tamaño y el timeout.
     Retorna None si falla o excede el tamaño máximo.
-
-    `http` puede ser una requests.Session (connection pooling) o el módulo requests.
     """
     try:
         url = urljoin(base_url, src) if not src.startswith("http") else src

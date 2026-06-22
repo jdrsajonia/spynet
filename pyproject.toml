@@ -17,6 +17,9 @@ dependencies = [
 [project.scripts]
 spynet = "cli:main"
 
+[tool.setuptools]
+py-modules = ["cli", "analyzer"]
+
 [tool.setuptools.packages.find]
 where = ["."]
 
