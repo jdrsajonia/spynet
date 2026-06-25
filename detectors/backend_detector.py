@@ -1,6 +1,6 @@
 import logging
 from .base_detector import BaseDetector
-from config.settings import PROBE_PATH_SCORE
+from config.constants import PROBE_PATH_SCORE
 
 logger = logging.getLogger("spynet.detectors.backend")
 

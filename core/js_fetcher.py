@@ -2,7 +2,7 @@ import logging
 import requests
 from urllib.parse import urljoin
 
-from config.settings import DEFAULT_HEADERS, JS_FETCH_TIMEOUT, MAX_JS_FILES, MAX_JS_SIZE
+from config.constants import DEFAULT_HEADERS, JS_FETCH_TIMEOUT, MAX_JS_FILES, MAX_JS_SIZE
 
 logger = logging.getLogger("spynet.core")
 

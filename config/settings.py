@@ -1,20 +1,66 @@
-DEFAULT_USER_AGENT = (
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-    "AppleWebKit/537.36 (KHTML, like Gecko) "
-    "Chrome/124.0.0.0 Safari/537.36"
+import os
+from pathlib import Path
+
+BASE_DIR = Path(__file__).resolve().parent.parent
+
+SECRET_KEY = os.environ.get(
+    "DJANGO_SECRET_KEY",
+    "django-insecure-dev-key-change-me-in-production",
 )
 
-DEFAULT_HEADERS = {"User-Agent": DEFAULT_USER_AGENT}
+DEBUG = os.environ.get("DJANGO_DEBUG", "1") == "1"
 
-# HTTP timeouts (seconds)
-REQUEST_TIMEOUT = 10    # main page fetch
-PROBE_TIMEOUT   = 5     # path probing (strategy 3)
-JS_FETCH_TIMEOUT = 6    # JS file download
-WAYBACK_TIMEOUT  = 15   # Wayback CDX API
+ALLOWED_HOSTS = os.environ.get(
+    "DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1,testserver"
+).split(",")
 
-# JS fetcher limits
-MAX_JS_FILES = 3
-MAX_JS_SIZE  = 500_000  # bytes — skip bundles larger than 500 KB
+INSTALLED_APPS = [
+    "rest_framework",
+    "api",
+]
 
-# Score assigned to a confirmed probe-path hit (strategy 3)
-PROBE_PATH_SCORE = 60
+MIDDLEWARE = [
+    "django.middleware.security.SecurityMiddleware",
+    "django.middleware.common.CommonMiddleware",
+]
+
+ROOT_URLCONF = "config.urls"
+
+TEMPLATES = [
+    {
+        "BACKEND": "django.template.backends.django.DjangoTemplates",
+        "DIRS": [],
+        "APP_DIRS": True,
+        "OPTIONS": {"context_processors": []},
+    },
+]
+
+WSGI_APPLICATION = "config.wsgi.application"
+ASGI_APPLICATION = "config.asgi.application"
+
+DATABASES = {
+    "default": {
+        "ENGINE": "django.db.backends.sqlite3",
+        "NAME": BASE_DIR / "db.sqlite3",
+    }
+}
+
+LANGUAGE_CODE = "en-us"
+TIME_ZONE = "UTC"
+USE_I18N = True
+USE_TZ = True
+
+DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+REST_FRAMEWORK = {
+    "EXCEPTION_HANDLER": "api.utils.exception_handler.custom_exception_handler",
+    "DEFAULT_RENDERER_CLASSES": [
+        "rest_framework.renderers.JSONRenderer",
+    ],
+    "DEFAULT_PARSER_CLASSES": [
+        "rest_framework.parsers.JSONParser",
+    ],
+    "DEFAULT_AUTHENTICATION_CLASSES": [],
+    "DEFAULT_PERMISSION_CLASSES": [],
+    "UNAUTHENTICATED_USER": None,
+}

@@ -12,7 +12,7 @@ from urllib.parse import urljoin
 
 from core.js_fetcher import fetch_js_contents
 from core.signature_loader import SignatureLoader
-from config.settings import DEFAULT_HEADERS, REQUEST_TIMEOUT, PROBE_TIMEOUT
+from config.constants import DEFAULT_HEADERS, REQUEST_TIMEOUT, PROBE_TIMEOUT
 from detectors.detector_factory import DetectorFactory
 from services.dns_service import DnsRecordService
 from services.geo_service import GeoService
@@ -264,7 +264,6 @@ class Analyzer:  # patrón Facade
             html    = response.text
             headers = dict(response.headers)
             cookies = {c.name: c.value for c in response.cookies}
-            # El HTML se parsea una sola vez aquí; el soup se reutiliza para scripts y recursos.
             soup    = self._make_soup(html)
             scripts = self._extract_scripts(soup, html)
             logger.debug(
