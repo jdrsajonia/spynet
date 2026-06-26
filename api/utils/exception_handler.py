@@ -1,12 +1,12 @@
 import logging
 
 import requests
-from django.http import Http404
+from django.http import Http404, JsonResponse
 from rest_framework.exceptions import APIException, MethodNotAllowed, NotFound, ValidationError
 from rest_framework.views import exception_handler as drf_exception_handler
 
 from api.utils import error_codes
-from api.utils.response import error_response
+from api.utils.response import error_envelope, error_response
 
 logger = logging.getLogger("spynet.api")
 
@@ -50,6 +50,21 @@ def custom_exception_handler(exc, context):
         code=error_codes.INTERNAL_ERROR,
         message="An unexpected error occurred.",
         status_code=500,
+    )
+
+# Django invokes these for routing-level 404s and unhandled 500s that never
+# reach a DRF view. They only take effect when DEBUG is False
+def handler404(request, exception=None):
+    return JsonResponse(
+        error_envelope(error_codes.NOT_FOUND, "The requested resource was not found."),
+        status=404,
+    )
+
+
+def handler500(request):
+    return JsonResponse(
+        error_envelope(error_codes.INTERNAL_ERROR, "An unexpected error occurred."),
+        status=500,
     )
 
 
