@@ -169,6 +169,8 @@ class Analyzer:  # patrón Facade
 
         return self._deduplicate(results)
 
+
+
     def _deduplicate(self, technologies: list[dict]) -> list[dict]:
         """Merge entries with the same name, keeping the highest confidence and all evidence."""
         seen: dict[str, dict] = {}
@@ -183,6 +185,8 @@ class Analyzer:  # patrón Facade
                 if tech["evidence"] not in existing["evidence"]:
                     existing["evidence"] += "; " + tech["evidence"]
         return list(seen.values())
+
+
 
     def _probe_paths_request(self, base_url: str) -> dict:
         """
@@ -204,6 +208,8 @@ class Analyzer:  # patrón Facade
             except Exception as exc:
                 logger.debug("Probe failed for %s: %s", path, exc)
         return responses
+
+
 
     def _extract_resources(self, soup: BeautifulSoup | None, base_url: str) -> list[str]:
         """
@@ -232,6 +238,8 @@ class Analyzer:  # patrón Facade
             logger.warning("Resource extraction failed for %s: %s", base_url, exc)
             return []
 
+
+
     def _collect_probe_paths(self) -> list[str]:
         """
         Recopila todas las rutas de sondeo definidas en signatures.json
@@ -245,6 +253,8 @@ class Analyzer:  # patrón Facade
                     paths.add(path)
         return list(paths)
 
+
+
     def _normalize_url(self, url: str) -> str:
         url = url.strip()
         if url.startswith("//"):
@@ -252,6 +262,8 @@ class Analyzer:  # patrón Facade
         elif not url.startswith(("http://", "https://")):
             url = "https://" + url
         return url
+
+
 
     def _fetch_page(self, url: str) -> dict | None:
         logger.debug("Fetching page: %s", url)
@@ -275,12 +287,16 @@ class Analyzer:  # patrón Facade
             logger.error("Failed to fetch page %s: %s", url, exc)
             return None
 
+
+
     def _make_soup(self, html: str) -> BeautifulSoup | None:
         try:
             return BeautifulSoup(html, "html.parser")
         except Exception as exc:
             logger.warning("BeautifulSoup parsing failed: %s", exc)
             return None
+
+
 
     def _extract_scripts(self, soup: BeautifulSoup | None, html: str) -> list[str]:
         if soup is not None:

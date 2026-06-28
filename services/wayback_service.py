@@ -1,5 +1,7 @@
 import logging
 import requests
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
 from .base_services import BaseServices
 from whois import extract_domain
 
@@ -10,6 +12,10 @@ class WaybackService(BaseServices):
     def __init__(self):
         self.cdx_api = "http://web.archive.org/cdx/search/cdx"
         self.headers = {"User-Agent": "Mozilla/5.0"}
+        retry = Retry(total=3, backoff_factor=1, status_forcelist=[500, 502, 503, 504])
+        self._session = requests.Session()
+        self._session.mount("http://", HTTPAdapter(max_retries=retry))
+        self._session.mount("https://", HTTPAdapter(max_retries=retry))
 
 
     def fetch_service(self, url, _depth_data=False):
@@ -17,7 +23,7 @@ class WaybackService(BaseServices):
 
 
     def get_count(self, domain: str) -> int:
-        response = requests.get(self.cdx_api, params={
+        response = self._session.get(self.cdx_api, params={
             "url": domain,
             "output": "json",
             "showNumPages": True
@@ -31,12 +37,12 @@ class WaybackService(BaseServices):
 
 
     def get_snapshots(self, domain: str) -> list:
-        response = requests.get(self.cdx_api, params={
+        response = self._session.get(self.cdx_api, params={
             "url": domain,
             "output": "json",
-            "limit": 5,
+            "limit": 13,
             "fl": "timestamp,original",
-            "collapse": "digest"
+            "collapse": "timestamp:4",
         }, headers=self.headers, timeout=15)
 
         data = response.json()
@@ -44,17 +50,13 @@ class WaybackService(BaseServices):
         if not data or len(data) <= 1:
             return []
 
-        snapshots = []
-        for row in data[1:]:
-            if len(row) != 2:
-                continue
-            timestamp, original = row
-            snapshots.append({
+        return [
+            {
                 "timestamp": timestamp,
                 "url": f"https://web.archive.org/web/{timestamp}/{original}"
-            })
-
-        return snapshots
+            }
+            for timestamp, original in (row for row in data[1:] if len(row) == 2)
+        ]
 
 
     def get_wayback(self, url: str) -> dict:

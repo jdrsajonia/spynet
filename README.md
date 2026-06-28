@@ -61,6 +61,91 @@ The system follows a modular architecture:
 
 ---
 
+## 💻 CLI — Quick Start
+
+### Installation
+
+Clone the repo and install in editable mode from the project root:
+
+```bash
+pip install -e .
+```
+
+This registers the `spynet` command in your PATH, pointing directly to the local source so any code change takes effect immediately without reinstalling.
+
+### Usage
+
+```bash
+# Basic analysis
+spynet example.com
+
+# Full WHOIS and geo data
+spynet example.com --depth
+
+# Analyze a Wayback Machine snapshot
+spynet example.com --snapshot <wayback-url>
+```
+
+Output is JSON printed to stdout.
+
+---
+
+## 🌐 REST API — Local Development
+
+### Start the server
+
+```bash
+python manage.py runserver
+```
+
+The API will be available at `http://127.0.0.1:8000/`.
+
+### Endpoints
+
+| Method | URL | Description |
+|--------|-----|-------------|
+| `POST` | `/api/v1/analyses/` | Analyze a URL |
+| `POST` | `/api/v1/analyses/snapshot/` | Analyze a Wayback Machine snapshot |
+| `GET` | `/api/v1/analyses/<id>/` | Get a saved analysis |
+| `GET` | `/api/v1/analyses/compare/?ids=1,2` | Compare two analyses |
+| `GET` | `/api/v1/stats/` | General stats |
+
+### Example requests
+
+**PowerShell (Windows):**
+```powershell
+# Analyze a URL
+Invoke-RestMethod -Method POST -Uri http://127.0.0.1:8000/api/v1/analyses/ -ContentType "application/json" -Body '{"url": "example.com"}' | ConvertTo-Json -Depth 10
+
+# Get an analysis
+Invoke-RestMethod -Uri http://127.0.0.1:8000/api/v1/analyses/1/ | ConvertTo-Json -Depth 10
+```
+
+**curl (Linux/macOS):**
+```bash
+# Analyze a URL
+curl -X POST http://127.0.0.1:8000/api/v1/analyses/ -H "Content-Type: application/json" -d '{"url": "example.com"}'
+
+# Get an analysis
+curl http://127.0.0.1:8000/api/v1/analyses/1/
+```
+
+**VSCode REST Client** — create a `test.http` file:
+```http
+POST http://127.0.0.1:8000/api/v1/analyses/
+Content-Type: application/json
+
+{"url": "example.com"}
+
+###
+
+GET http://127.0.0.1:8000/api/v1/analyses/1/
+```
+
+> **Note:** Views are currently stubs — all endpoints return `{"message": "not implemented"}`. The routing, validation, and error handling are fully functional.
+
+---
+
 ## 📌 Status
 
 Project under development for **Software Engineering II**.

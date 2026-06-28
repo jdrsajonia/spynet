@@ -1,5 +1,6 @@
 from rest_framework.exceptions import NotFound
 from rest_framework.views import APIView
+from analyzer import Analyzer
 
 from api.serializers import (
     AnalysisInputSerializer,
@@ -12,10 +13,14 @@ STUB = {"message": "not implemented"}
 
 
 class AnalysisCreateView(APIView):
+    _analyzer=Analyzer()
     def post(self, request):
         serializer = AnalysisInputSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        return success_response(data=STUB, meta={"analysis_id": 1}, status_code=201)
+        
+        url=serializer.validated_data["url"]
+        data_analysis=self._analyzer.analyze(url)
+        return success_response(data=data_analysis, meta={"analysis_id": 1}, status_code=201)
 
 
 class AIAnalysisCreateView(APIView):
@@ -26,10 +31,13 @@ class AIAnalysisCreateView(APIView):
 
 
 class SnapshotAnalysisView(APIView):
+    _analyzer=Analyzer()
     def post(self, request):
         serializer = SnapshotInputSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        return success_response(data=STUB, meta={"analysis_id": 1}, status_code=201)
+        url=serializer.validated_data["url"]
+        data_analysis=self._analyzer.analyze_snapshot(url)
+        return success_response(data=data_analysis, meta={"analysis_id": 1}, status_code=201)
 
 
 class AnalysisDetailView(APIView):
