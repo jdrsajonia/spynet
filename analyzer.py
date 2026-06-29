@@ -166,6 +166,9 @@ class Analyzer:  # patrón Facade
         results += detectors["cdn"].detect(
             html, headers, scripts, ns_list, server_ip
         )
+        # ServerDetector: solo en vivo. En snapshots el header Server lo pone
+        # web.archive.org, no el sitio original, así que ahí no aplica.
+        results += detectors["server"].detect(html, headers, scripts)
 
         return self._deduplicate(results)
 

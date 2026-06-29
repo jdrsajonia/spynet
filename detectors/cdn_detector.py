@@ -1,5 +1,6 @@
 import logging
 from .base_detector import BaseDetector
+from config.constants import MAX_CATEGORY_MATCHES
 
 logger = logging.getLogger("spynet.detectors.cdn")
 
@@ -41,16 +42,22 @@ class CDNDetector(BaseDetector):
 
             # ── Señales en nameservers DNS ────────────────────────────────
             w_ns = sig["weights"]["ns_patterns"]
+            ns_matches = 0
             for pattern in sig["ns_patterns"]:
                 if any(pattern.lower() in ns for ns in ns_lower):
-                    score += w_ns
+                    if ns_matches < MAX_CATEGORY_MATCHES:
+                        score += w_ns
+                        ns_matches += 1
                     evidence.append(f"nameserver contiene '{pattern}'")
 
             # ── Señales en rango de IP ────────────────────────────────────
             w_ip = sig["weights"]["ip_ranges"]
+            ip_matches = 0
             for ip_prefix in sig["ip_ranges"]:
                 if ip.startswith(ip_prefix):
-                    score += w_ip
+                    if ip_matches < MAX_CATEGORY_MATCHES:
+                        score += w_ip
+                        ip_matches += 1
                     evidence.append(f"IP {ip} pertenece al rango de {tech_name}")
 
             if score >= sig["threshold"] and evidence:

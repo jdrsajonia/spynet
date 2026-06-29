@@ -29,8 +29,9 @@ class DnsRecordService(BaseServices):
                     answers = dns.resolver.resolve(domain, type_record)
                     records[type_record] = [str(r) for r in answers]
                     logger.debug("DNS %s records for %s: %s", type_record, domain, records[type_record])
-                except Exception:
-                    pass
+                except Exception as exc:
+                    # Es normal que falte un tipo (ej. sin CNAME o sin MX); no es un error.
+                    logger.debug("No %s records for %s: %s", type_record, domain, exc)
 
             logger.info(
                 "DNS lookup complete for %s: A=%d NS=%d MX=%d",

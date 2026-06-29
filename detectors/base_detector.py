@@ -1,5 +1,7 @@
 from abc import ABC, abstractmethod
 
+from config.constants import MAX_CATEGORY_MATCHES
+
 
 class BaseDetector(ABC):
     """
@@ -66,14 +68,20 @@ class BaseDetector(ABC):
         Estrategia compartida de substring-match: suma `weight` por cada patrón
         presente en `haystack` (ya en minúsculas) y construye su evidencia.
         Usada por todos los detectores para HTML, script src, JS, recursos y cookies.
+
+        El score por categoría se topa en MAX_CATEGORY_MATCHES coincidencias para
+        evitar acumulación ruidosa; la evidencia sí lista todos los matches hallados.
         """
         score: int = 0
+        matches: int = 0
         evidence: list[str] = []
         if not weight or not haystack:
             return score, evidence
         for p in patterns:
             if p.lower() in haystack:
-                score += weight
+                if matches < MAX_CATEGORY_MATCHES:
+                    score += weight
+                    matches += 1
                 evidence.append(f"{prefix}{p}{suffix}")
         return score, evidence
 
@@ -83,14 +91,20 @@ class BaseDetector(ABC):
         weight: int,
         headers_lower: dict,
     ) -> tuple[int, list[str]]:
-        """Match de headers reutilizando _match_header (clave-sola o 'clave: valor')."""
+        """Match de headers reutilizando _match_header (clave-sola o 'clave: valor').
+
+        Topa el score en MAX_CATEGORY_MATCHES, igual que _scan_text.
+        """
         score: int = 0
+        matches: int = 0
         evidence: list[str] = []
         if not weight:
             return score, evidence
         for p in patterns:
             if self._match_header(p, headers_lower):
-                score += weight
+                if matches < MAX_CATEGORY_MATCHES:
+                    score += weight
+                    matches += 1
                 evidence.append(f"header '{p}' presente")
         return score, evidence
 

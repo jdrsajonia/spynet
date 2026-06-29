@@ -51,6 +51,52 @@ The system follows a modular architecture:
 
 ---
 
+## 🧬 How detection works (scoring model)
+
+Technology detection is the core of Spynet. Every technology is described in
+[`core/signatures.json`](core/signatures.json) by a set of **patterns** grouped
+into categories (HTML, script `src`, headers, cookies, downloaded JS, static
+resources, DNS/IP for CDNs). A `DetectorFactory` builds one detector per category
+(`frontend`, `backend`, `cdn`, `server`) following the **Strategy** pattern.
+
+### Weighted scoring
+
+Each category has a `weight`. For every matching pattern the detector adds that
+weight to a running `score`, then compares the total against the technology's
+`threshold`. If `score >= threshold`, the technology is reported with a
+`confidence` (capped at 100) and the list of evidence that triggered it.
+
+```
+score = Σ (weight_category × matches_in_category)   →   detected if score >= threshold
+```
+
+Signals across categories accumulate, so a strong header **plus** a matching
+cookie reinforce each other, while a single weak signal is usually not enough.
+
+### Robustness: two design rules
+
+Adding more signatures does **not** make detection more robust by itself — the
+opposite, in fact. Two rules keep it accurate:
+
+1. **Per-category cap** (`MAX_CATEGORY_MATCHES` in `config/constants.py`).
+   At most *N* matches per category contribute to the score (the evidence still
+   lists them all). This stops a technology with many weak patterns from
+   accumulating an inflated score and crossing its threshold on noise alone.
+
+2. **Pattern specificity.** A pattern only earns a high weight if it is
+   *discriminant* — i.e. it does not appear across many unrelated frameworks.
+   Generic signals (e.g. `x-content-type-options`, `x-requested-with`) are
+   removed or given a low weight. Substring traps are avoided too: for example
+   `@remix-run/` was dropped because it is shipped by **React Router**, not only
+   by the Remix framework, and short `ng*` tokens were removed because they
+   match unrelated minified identifiers (`ngComponent` ⊂ `renderingComponent`).
+
+> **Takeaway:** robustness comes from the *cap* and *specificity*, not from the
+> number of signatures. Every false positive we found during validation was a
+> non-discriminant pattern, never a missing one.
+
+---
+
 ## 🛠️ Stack
 
 - Python / Django  
@@ -107,8 +153,8 @@ The API will be available at `http://127.0.0.1:8000/`.
 | `POST` | `/api/v1/analyses/` | Analyze a URL |
 | `POST` | `/api/v1/analyses/snapshot/` | Analyze a Wayback Machine snapshot |
 | `GET` | `/api/v1/analyses/<id>/` | Get a saved analysis |
-| `GET` | `/api/v1/analyses/compare/?ids=1,2` | Compare two analyses |
-| `GET` | `/api/v1/stats/` | General stats |
+| `GET` | `/api/v1/analyses/compare/?a=1&b=2` | Compare two saved analyses |
+| `GET` | `/api/v1/stats/` | Aggregated stats across stored analyses |
 
 ### Example requests
 
@@ -142,7 +188,11 @@ Content-Type: application/json
 GET http://127.0.0.1:8000/api/v1/analyses/1/
 ```
 
-> **Note:** Views are currently stubs — all endpoints return `{"message": "not implemented"}`. The routing, validation, and error handling are fully functional.
+> **Note:** `POST /analyses/` runs a full live analysis and **persists** it; the
+> result is then retrievable via `GET /analyses/<id>/`, comparable via
+> `/analyses/compare/`, and aggregated in `/stats/`. `POST /analyses/snapshot/`
+> runs a passive analysis over a Wayback snapshot (not persisted). The
+> `ai-analyses/` endpoint is still a stub.
 
 ---
 

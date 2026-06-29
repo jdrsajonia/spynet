@@ -22,7 +22,14 @@ class WaybackService(BaseServices):
         return self.get_wayback(url)
 
 
-    def get_count(self, domain: str) -> int:
+    def get_archive_pages(self, domain: str) -> int:
+        """
+        Número de PÁGINAS en que la CDX API parte el índice de capturas del dominio
+        (parámetro showNumPages). NO es el número de snapshots: cada página agrupa
+        miles de capturas. Sirve como métrica barata de "qué tan archivado está" un
+        dominio sin descargar todas las filas. Para el conteo exacto habría que
+        paginar el índice completo, lo cual es lento y pesado.
+        """
         response = self._session.get(self.cdx_api, params={
             "url": domain,
             "output": "json",
@@ -63,13 +70,13 @@ class WaybackService(BaseServices):
         try:
             domain = extract_domain(url)
             logger.info("Wayback lookup for domain: %s", domain)
-            count = self.get_count(domain)
+            archive_pages = self.get_archive_pages(domain)
             snapshots = self.get_snapshots(domain)
             logger.info(
-                "Wayback complete for %s: %d total snapshots, %d recent retrieved",
-                domain, count, len(snapshots)
+                "Wayback complete for %s: %d CDX pages, %d snapshots retrieved",
+                domain, archive_pages, len(snapshots)
             )
-            return {"snapshot_count": count, "snapshots": snapshots}
+            return {"archive_pages": archive_pages, "snapshots": snapshots}
         except Exception as exc:
             logger.error("Wayback lookup failed for %s: %s", url, exc)
             return None

@@ -51,7 +51,8 @@
                 "data-v-",
                 "v-bind:",
                 "v-if=",
-                "v-for="
+                "v-for=",
+                "data-server-rendered=\"true\""
             ],
             "script_patterns": [
                 "vue.min.js",
@@ -106,16 +107,11 @@
             "header_patterns": [],
             "cookie_patterns": [],
             "js_patterns": [
-                "ngmodule",
-                "ngcomponent",
-                "nginjectable",
-                "zone.js",
                 "__zone_symbol__",
                 "ivy_enabled",
                 "\u0275\u0275definecomponent",
                 "\u0275\u0275definengmodule",
-                "platformbrowserdynamic",
-                "ngelement"
+                "platformbrowserdynamic"
             ],
             "resource_patterns": [
                 "angular.min.js",
@@ -220,6 +216,246 @@
                 "resource_patterns": 40
             },
             "threshold": 40
+        },
+        "Svelte / SvelteKit": {
+            "html_patterns": [
+                "__sveltekit",
+                "data-sveltekit",
+                "class=\"svelte-",
+                "svelte-announcer"
+            ],
+            "script_patterns": [
+                "/_app/immutable/",
+                "/_app/version.json"
+            ],
+            "header_patterns": [],
+            "cookie_patterns": [],
+            "js_patterns": [
+                "__svelte",
+                "svelte/internal",
+                "$$invalidate",
+                "create_fragment(",
+                "__sveltekit_"
+            ],
+            "resource_patterns": [
+                "/_app/immutable/chunks/",
+                "/_app/immutable/entry/",
+                "/_app/immutable/nodes/"
+            ],
+            "probe_paths": {},
+            "weights": {
+                "html_patterns": 40,
+                "script_patterns": 45,
+                "header_patterns": 0,
+                "cookie_patterns": 0,
+                "js_patterns": 45,
+                "resource_patterns": 45
+            },
+            "threshold": 40
+        },
+        "Gatsby": {
+            "html_patterns": [
+                "id=\"___gatsby\"",
+                "id=\"gatsby-focus-wrapper\"",
+                "___gatsby"
+            ],
+            "script_patterns": [
+                "/page-data/app-data.json",
+                "webpack-runtime-"
+            ],
+            "header_patterns": [],
+            "cookie_patterns": [],
+            "js_patterns": [
+                "___gatsby",
+                "window.___chunkmapping",
+                "gatsby-link",
+                "___loader"
+            ],
+            "resource_patterns": [
+                "/page-data/",
+                "component---",
+                "/static/d/"
+            ],
+            "probe_paths": {},
+            "weights": {
+                "html_patterns": 45,
+                "script_patterns": 40,
+                "header_patterns": 0,
+                "cookie_patterns": 0,
+                "js_patterns": 45,
+                "resource_patterns": 40
+            },
+            "threshold": 40
+        },
+        "Astro": {
+            "html_patterns": [
+                "astro-island",
+                "astro-slot",
+                "data-astro-cid",
+                "class=\"astro-"
+            ],
+            "script_patterns": [
+                "astro/components"
+            ],
+            "header_patterns": [],
+            "cookie_patterns": [],
+            "js_patterns": [
+                "astro-island",
+                "@astrojs/",
+                "client:load",
+                "client:visible"
+            ],
+            "resource_patterns": [
+                "/_astro/"
+            ],
+            "probe_paths": {},
+            "weights": {
+                "html_patterns": 45,
+                "script_patterns": 35,
+                "header_patterns": 0,
+                "cookie_patterns": 0,
+                "js_patterns": 40,
+                "resource_patterns": 45
+            },
+            "threshold": 40
+        },
+        "Remix": {
+            "html_patterns": [
+                "data-remix-run",
+                "window.__remixcontext",
+                "window.__remixmanifest",
+                "window.__remixroutemodules"
+            ],
+            "script_patterns": [
+                "/build/manifest-",
+                "/build/root-"
+            ],
+            "header_patterns": [],
+            "cookie_patterns": [],
+            "js_patterns": [
+                "__remixcontext",
+                "__remixmanifest",
+                "__remixroutemodules"
+            ],
+            "resource_patterns": [
+                "/build/_shared/",
+                "/build/routes/"
+            ],
+            "probe_paths": {},
+            "weights": {
+                "html_patterns": 50,
+                "script_patterns": 40,
+                "header_patterns": 0,
+                "cookie_patterns": 0,
+                "js_patterns": 50,
+                "resource_patterns": 40
+            },
+            "threshold": 40
+        },
+        "Ember.js": {
+            "html_patterns": [
+                "id=\"ember\"",
+                "class=\"ember-application\"",
+                "ember-view",
+                "data-ember-action"
+            ],
+            "script_patterns": [
+                "/assets/vendor-",
+                "ember.debug.js",
+                "ember.prod.js"
+            ],
+            "header_patterns": [],
+            "cookie_patterns": [],
+            "js_patterns": [
+                "ember.application",
+                "ember.component",
+                "define(\"@ember/",
+                "emberdata"
+            ],
+            "resource_patterns": [
+                "/assets/vendor-",
+                "/assets/dummy-"
+            ],
+            "probe_paths": {},
+            "weights": {
+                "html_patterns": 45,
+                "script_patterns": 35,
+                "header_patterns": 0,
+                "cookie_patterns": 0,
+                "js_patterns": 45,
+                "resource_patterns": 30
+            },
+            "threshold": 40
+        },
+        "Alpine.js": {
+            "html_patterns": [
+                "x-data=",
+                "x-init=",
+                "x-show=",
+                "@click=",
+                "x-bind:"
+            ],
+            "script_patterns": [
+                "alpinejs",
+                "/alpine.min.js",
+                "cdn.jsdelivr.net/npm/alpinejs"
+            ],
+            "header_patterns": [],
+            "cookie_patterns": [],
+            "js_patterns": [
+                "alpine.data(",
+                "alpine.store(",
+                "window.alpine",
+                "__x_"
+            ],
+            "resource_patterns": [
+                "alpinejs",
+                "alpine.min.js"
+            ],
+            "probe_paths": {},
+            "weights": {
+                "html_patterns": 30,
+                "script_patterns": 45,
+                "header_patterns": 0,
+                "cookie_patterns": 0,
+                "js_patterns": 45,
+                "resource_patterns": 40
+            },
+            "threshold": 45
+        },
+        "jQuery": {
+            "html_patterns": [],
+            "script_patterns": [
+                "jquery.min.js",
+                "jquery.js",
+                "/jquery@",
+                "jquery-3.",
+                "jquery-2.",
+                "jquery-1.",
+                "ajax/libs/jquery/"
+            ],
+            "header_patterns": [],
+            "cookie_patterns": [],
+            "js_patterns": [
+                "jquery.fn.jquery",
+                "jquery.fn.init",
+                "window.jquery",
+                "jquery.easing"
+            ],
+            "resource_patterns": [
+                "jquery.min.js",
+                "ajax/libs/jquery/"
+            ],
+            "probe_paths": {},
+            "weights": {
+                "html_patterns": 0,
+                "script_patterns": 40,
+                "header_patterns": 0,
+                "cookie_patterns": 0,
+                "js_patterns": 45,
+                "resource_patterns": 35
+            },
+            "threshold": 40
         }
     },
     "backend": {
@@ -263,7 +499,7 @@
             "weights": {
                 "html_patterns": 50,
                 "script_patterns": 0,
-                "header_patterns": 20,
+                "header_patterns": 5,
                 "cookie_patterns": 30,
                 "js_patterns": 40,
                 "resource_patterns": 20
@@ -350,13 +586,9 @@
             ],
             "js_patterns": [
                 "mix-manifest",
-                "axios.defaults.headers.common",
-                "x-requested-with",
                 "window.laravel",
                 "laravel-echo",
-                "window.echo",
                 "sanctum/csrf-cookie",
-                "livewire",
                 "window.livewire"
             ],
             "resource_patterns": [
@@ -420,7 +652,8 @@
         "PHP": {
             "html_patterns": [],
             "script_patterns": [
-                ".php"
+                "index.php",
+                ".php?"
             ],
             "header_patterns": [
                 "x-powered-by: php"
@@ -430,8 +663,8 @@
             ],
             "js_patterns": [],
             "resource_patterns": [
-                ".php",
                 "/index.php",
+                ".php?ver=",
                 "/wp-"
             ],
             "probe_paths": {
@@ -450,6 +683,63 @@
                 "cookie_patterns": 40,
                 "js_patterns": 0,
                 "resource_patterns": 20
+            },
+            "threshold": 40
+        },
+        "Ruby on Rails": {
+            "html_patterns": [
+                "authenticity_token",
+                "data-remote=\"true\"",
+                "data-method=\"delete\"",
+                "data-method=\"patch\"",
+                "data-confirm",
+                "data-pjax",
+                "data-turbo"
+            ],
+            "script_patterns": [
+                "rails-ujs",
+                "activestorage",
+                "/packs/js/",
+                "turbo.js",
+                "turbolinks"
+            ],
+            "header_patterns": [
+                "x-runtime",
+                "x-request-id",
+                "x-powered-by: phusion passenger",
+                "x-powered-by: passenger"
+            ],
+            "cookie_patterns": [
+                "_session_id",
+                "_rails_session"
+            ],
+            "js_patterns": [
+                "rails.ajax(",
+                "rails.confirm",
+                "turbo.visit(",
+                "turbolinks.visit(",
+                "stimulus.application",
+                "rails-ujs",
+                "ActionCable"
+            ],
+            "resource_patterns": [
+                "/assets/application-",
+                "/packs/js/app-",
+                "turbolinks"
+            ],
+            "probe_paths": {
+                "/rails/info/properties": [
+                    "rails version",
+                    "ruby version"
+                ]
+            },
+            "weights": {
+                "html_patterns": 40,
+                "script_patterns": 35,
+                "header_patterns": 50,
+                "cookie_patterns": 40,
+                "js_patterns": 40,
+                "resource_patterns": 30
             },
             "threshold": 40
         },
@@ -491,6 +781,129 @@
                 "resource_patterns": 25
             },
             "threshold": 40
+        },
+        "Flask": {
+            "html_patterns": [],
+            "script_patterns": [],
+            "header_patterns": [
+                "server: werkzeug"
+            ],
+            "cookie_patterns": [
+                "session="
+            ],
+            "js_patterns": [],
+            "resource_patterns": [
+                "/static/"
+            ],
+            "probe_paths": {},
+            "weights": {
+                "html_patterns": 0,
+                "script_patterns": 0,
+                "header_patterns": 60,
+                "cookie_patterns": 20,
+                "js_patterns": 0,
+                "resource_patterns": 10
+            },
+            "threshold": 50
+        },
+        "Spring Boot": {
+            "html_patterns": [],
+            "script_patterns": [],
+            "header_patterns": [
+                "x-application-context"
+            ],
+            "cookie_patterns": [
+                "jsessionid"
+            ],
+            "js_patterns": [],
+            "resource_patterns": [],
+            "probe_paths": {
+                "/actuator/health": [
+                    "\"status\":\"up\"",
+                    "\"status\": \"up\""
+                ],
+                "/actuator/info": [
+                    "build",
+                    "git"
+                ],
+                "/error": [
+                    "whitelabel error page",
+                    "this application has no explicit mapping"
+                ]
+            },
+            "weights": {
+                "html_patterns": 0,
+                "script_patterns": 0,
+                "header_patterns": 50,
+                "cookie_patterns": 40,
+                "js_patterns": 0,
+                "resource_patterns": 0
+            },
+            "threshold": 50
+        },
+        "Symfony": {
+            "html_patterns": [
+                "sf-toolbar",
+                "sf-minitoolbar"
+            ],
+            "script_patterns": [],
+            "header_patterns": [
+                "x-debug-token",
+                "x-debug-token-link"
+            ],
+            "cookie_patterns": [
+                "symfony"
+            ],
+            "js_patterns": [],
+            "resource_patterns": [
+                "/bundles/",
+                "/_wdt/",
+                "/_profiler/"
+            ],
+            "probe_paths": {
+                "/_profiler": [
+                    "symfony profiler"
+                ]
+            },
+            "weights": {
+                "html_patterns": 40,
+                "script_patterns": 0,
+                "header_patterns": 50,
+                "cookie_patterns": 30,
+                "js_patterns": 0,
+                "resource_patterns": 35
+            },
+            "threshold": 40
+        },
+        "Java / Tomcat": {
+            "html_patterns": [],
+            "script_patterns": [
+                ".jsp",
+                ".do",
+                ".action"
+            ],
+            "header_patterns": [
+                "server: apache-coyote",
+                "server: apache tomcat"
+            ],
+            "cookie_patterns": [
+                "jsessionid"
+            ],
+            "js_patterns": [],
+            "resource_patterns": [
+                ".jsp",
+                "jsessionid="
+            ],
+            "probe_paths": {},
+            "weights": {
+                "html_patterns": 0,
+                "script_patterns": 25,
+                "header_patterns": 60,
+                "cookie_patterns": 35,
+                "js_patterns": 0,
+                "resource_patterns": 20
+            },
+            "threshold": 50
         }
     },
     "cdn": {
@@ -713,6 +1126,98 @@
                 "header_patterns": 60,
                 "ns_patterns": 70,
                 "ip_ranges": 15
+            },
+            "threshold": 50
+        },
+        "Fastly": {
+            "header_patterns": [
+                "x-served-by",
+                "x-fastly-request-id",
+                "fastly-restarts",
+                "surrogate-key",
+                "x-cache: hit, hit",
+                "server: fastly"
+            ],
+            "ns_patterns": [
+                "fastly.net",
+                "fastlydns.net"
+            ],
+            "ip_ranges": [
+                "151.101.",
+                "199.232.",
+                "146.75."
+            ],
+            "weights": {
+                "header_patterns": 55,
+                "ns_patterns": 60,
+                "ip_ranges": 40
+            },
+            "threshold": 50
+        }
+    },
+    "server": {
+        "Nginx": {
+            "header_patterns": [
+                "server: nginx",
+                "server: openresty"
+            ],
+            "html_patterns": [
+                "<center>nginx</center>",
+                "<hr><center>nginx"
+            ],
+            "weights": {
+                "header_patterns": 60,
+                "html_patterns": 40
+            },
+            "threshold": 50
+        },
+        "Apache": {
+            "header_patterns": [
+                "server: apache"
+            ],
+            "html_patterns": [
+                "<address>apache",
+                "apache/2."
+            ],
+            "weights": {
+                "header_patterns": 60,
+                "html_patterns": 40
+            },
+            "threshold": 50
+        },
+        "Microsoft IIS": {
+            "header_patterns": [
+                "server: microsoft-iis",
+                "x-powered-by: asp.net",
+                "x-aspnet-version"
+            ],
+            "html_patterns": [],
+            "weights": {
+                "header_patterns": 60,
+                "html_patterns": 0
+            },
+            "threshold": 50
+        },
+        "LiteSpeed": {
+            "header_patterns": [
+                "server: litespeed",
+                "x-litespeed-cache"
+            ],
+            "html_patterns": [],
+            "weights": {
+                "header_patterns": 60,
+                "html_patterns": 0
+            },
+            "threshold": 50
+        },
+        "Caddy": {
+            "header_patterns": [
+                "server: caddy"
+            ],
+            "html_patterns": [],
+            "weights": {
+                "header_patterns": 60,
+                "html_patterns": 0
             },
             "threshold": 50
         }
