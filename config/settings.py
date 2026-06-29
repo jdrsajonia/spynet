@@ -15,14 +15,23 @@ ALLOWED_HOSTS = os.environ.get(
 ).split(",")
 
 INSTALLED_APPS = [
+    "corsheaders",
     "rest_framework",
     "api",
 ]
 
 MIDDLEWARE = [
+    # CorsMiddleware debe ir lo más arriba posible, antes de CommonMiddleware.
+    "corsheaders.middleware.CorsMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "django.middleware.common.CommonMiddleware",
 ]
+
+# Orígenes permitidos para el frontend (Vite :5173, CRA/Next :3000 por defecto en dev).
+CORS_ALLOWED_ORIGINS = os.environ.get(
+    "DJANGO_CORS_ORIGINS",
+    "http://localhost:5173,http://127.0.0.1:5173,http://localhost:3000,http://127.0.0.1:3000",
+).split(",")
 
 ROOT_URLCONF = "config.urls"
 
@@ -63,4 +72,15 @@ REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": [],
     "DEFAULT_PERMISSION_CLASSES": [],
     "UNAUTHENTICATED_USER": None,
+    "DEFAULT_THROTTLE_CLASSES": [
+        "rest_framework.throttling.AnonRateThrottle",
+        "rest_framework.throttling.ScopedRateThrottle",
+    ],
+    "DEFAULT_THROTTLE_RATES": {
+        # Límite general por IP para no abusar de la API.
+        "anon": "60/min",
+        # Límite estricto para los endpoints que disparan análisis en vivo:
+        # protege los servicios externos, sobre todo ip-api.com (45 req/min).
+        "analyze": "10/min",
+    },
 }

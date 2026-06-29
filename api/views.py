@@ -1,15 +1,19 @@
 import time
 
-from django.db.models import Count
+from django.core.paginator import Paginator
+from django.db.models import Avg, Count
+from django.db.models.functions import TruncDate
 from rest_framework.exceptions import NotFound
 from rest_framework.views import APIView
+from whois import extract_domain
 
 from analyzer import Analyzer
-from api.models import Analysis, Technology
+from api.models import Analysis, Domain, Technology
 from api.persistence import persist_analysis, persist_snapshot
 from api.serializers import (
     AnalysisInputSerializer,
     CompareQuerySerializer,
+    CompareUrlSerializer,
     SnapshotInputSerializer,
 )
 from api.utils.response import success_response
@@ -22,7 +26,81 @@ STUB = {"message": "not implemented"}
 _analyzer = Analyzer()
 
 
+# ── helpers ───────────────────────────────────────────────────────────────────
+
+def _safe_int(value, default):
+    try:
+        return max(int(value), 1)
+    except (TypeError, ValueError):
+        return default
+
+
+def _resolve_or_analyze(url: str) -> Analysis:
+    """
+    Opción B: devuelve el último análisis guardado del dominio de `url`;
+    si nunca se ha analizado, lo analiza en vivo y lo persiste.
+    """
+    domain_name = extract_domain(url)
+    analysis = (
+        Analysis.objects.filter(domain__name=domain_name)
+        .order_by("-analyzed_at")
+        .first()
+    )
+    if analysis is None:
+        analysis = persist_analysis(_analyzer.analyze(url), triggered_by="api")
+    return analysis
+
+
+def _tech_map(analysis: Analysis) -> dict:
+    """{nombre: {category, confidence}} de las tecnologías en vivo del análisis."""
+    return {
+        t["name"]: {"category": t["category"], "confidence": t["confidence"]}
+        for t in analysis.technologies.values("name", "category", "confidence")
+    }
+
+
+def _compare_payload(a: Analysis, b: Analysis) -> dict:
+    techs_a, techs_b = _tech_map(a), _tech_map(b)
+    names_a, names_b = set(techs_a), set(techs_b)
+
+    shared = [
+        {
+            "name": name,
+            "category": techs_a[name]["category"],
+            "confidence_a": techs_a[name]["confidence"],
+            "confidence_b": techs_b[name]["confidence"],
+        }
+        for name in sorted(names_a & names_b)
+    ]
+    only_a = [
+        {"name": n, "category": techs_a[n]["category"], "confidence": techs_a[n]["confidence"]}
+        for n in sorted(names_a - names_b)
+    ]
+    only_b = [
+        {"name": n, "category": techs_b[n]["category"], "confidence": techs_b[n]["confidence"]}
+        for n in sorted(names_b - names_a)
+    ]
+    return {
+        "a": a.to_dict(),
+        "b": b.to_dict(),
+        "comparison": {
+            "total": len(names_a | names_b),
+            "shared_technologies": shared,
+            "only_in_a": only_a,
+            "only_in_b": only_b,
+        },
+    }
+
+
+# ── vistas ────────────────────────────────────────────────────────────────────
+
 class AnalysisCreateView(APIView):
+    def get_throttles(self):
+        # El POST dispara análisis en vivo → throttle estricto; el GET (listado) no.
+        if self.request.method == "POST":
+            self.throttle_scope = "analyze"
+        return super().get_throttles()
+
     def post(self, request):
         serializer = AnalysisInputSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -39,6 +117,41 @@ class AnalysisCreateView(APIView):
             status_code=201,
         )
 
+    def get(self, request):
+        page = _safe_int(request.query_params.get("page"), 1)
+        page_size = min(_safe_int(request.query_params.get("page_size"), 20), 100)
+
+        qs = (
+            Analysis.objects.select_related("domain")
+            .annotate(technologies_count=Count("technologies"))
+            .order_by("-analyzed_at")
+        )
+        paginator = Paginator(qs, page_size)
+        page_obj = paginator.get_page(page)
+
+        data = [
+            {
+                "id": a.pk,
+                "domain": a.domain.name,
+                "url": a.source_url,
+                "status": a.status,
+                "triggered_by": a.triggered_by,
+                "analyzed_at": a.analyzed_at.isoformat(),
+                "technologies_count": a.technologies_count,
+            }
+            for a in page_obj
+        ]
+        return success_response(
+            data=data,
+            meta={
+                "page": page_obj.number,
+                "pages": paginator.num_pages,
+                "total": paginator.count,
+                "page_size": page_size,
+            },
+            status_code=200,
+        )
+
 
 class AIAnalysisCreateView(APIView):
     def post(self, request):
@@ -48,6 +161,8 @@ class AIAnalysisCreateView(APIView):
 
 
 class SnapshotAnalysisView(APIView):
+    throttle_scope = "analyze"
+
     def post(self, request):
         serializer = SnapshotInputSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -82,10 +197,16 @@ class AnalysisDetailView(APIView):
 
 
 class AnalysisCompareView(APIView):
+    def get_throttles(self):
+        # El POST puede analizar en vivo (resolver-o-analizar) → throttle estricto.
+        if self.request.method == "POST":
+            self.throttle_scope = "analyze"
+        return super().get_throttles()
+
     def get(self, request):
+        # Comparar dos análisis existentes por id.
         serializer = CompareQuerySerializer(data=request.query_params)
         serializer.is_valid(raise_exception=True)
-
         id_a = serializer.validated_data["a"]
         id_b = serializer.validated_data["b"]
 
@@ -93,27 +214,55 @@ class AnalysisCompareView(APIView):
         if id_a not in analyses or id_b not in analyses:
             raise NotFound("One or both analyses were not found.")
 
-        a, b = analyses[id_a], analyses[id_b]
-        names_a = set(a.technologies.values_list("name", flat=True))
-        names_b = set(b.technologies.values_list("name", flat=True))
+        return success_response(
+            data=_compare_payload(analyses[id_a], analyses[id_b]),
+            meta=serializer.validated_data,
+            status_code=200,
+        )
+
+    def post(self, request):
+        # Comparar dos sitios por URL (opción B: resolver al último análisis o analizar).
+        serializer = CompareUrlSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        a = _resolve_or_analyze(serializer.validated_data["url_a"])
+        b = _resolve_or_analyze(serializer.validated_data["url_b"])
 
         return success_response(
-            data={
-                "a": a.to_dict(),
-                "b": b.to_dict(),
-                "comparison": {
-                    "shared_technologies": sorted(names_a & names_b),
-                    "only_in_a": sorted(names_a - names_b),
-                    "only_in_b": sorted(names_b - names_a),
-                },
-            },
-            meta=serializer.validated_data,
+            data=_compare_payload(a, b),
+            meta={"a": a.pk, "b": b.pk},
+            status_code=200,
+        )
+
+
+class DomainHistoryView(APIView):
+    def get(self, request, name):
+        analyses = Analysis.objects.filter(domain__name=name).order_by("-analyzed_at")
+        if not analyses.exists():
+            raise NotFound(f"No analyses found for domain '{name}'.")
+
+        data = [
+            {
+                "id": a.pk,
+                "status": a.status,
+                "triggered_by": a.triggered_by,
+                "analyzed_at": a.analyzed_at.isoformat(),
+                "technologies": [t.to_dict() for t in a.technologies.all()],
+            }
+            for a in analyses
+        ]
+        return success_response(
+            data=data,
+            meta={"domain": name, "count": len(data)},
             status_code=200,
         )
 
 
 class StatsView(APIView):
     def get(self, request):
+        avg_ms = Analysis.objects.aggregate(v=Avg("duration_ms"))["v"]
+        avg_conf = Technology.objects.aggregate(v=Avg("confidence"))["v"]
+
         top = (
             Technology.objects.values("name")
             .annotate(count=Count("id"))
@@ -124,13 +273,28 @@ class StatsView(APIView):
             .annotate(count=Count("id"))
             .order_by("category")
         )
+        activity = (
+            Analysis.objects.annotate(day=TruncDate("analyzed_at"))
+            .values("day")
+            .annotate(count=Count("id"))
+            .order_by("day")
+        )
+
         return success_response(
             data={
                 "total_analyses": Analysis.objects.count(),
+                "unique_domains": Domain.objects.count(),
+                "total_detections": Technology.objects.count(),
+                "avg_analysis_time_seconds": round(avg_ms / 1000, 2) if avg_ms else None,
+                "avg_confidence": round(avg_conf, 1) if avg_conf is not None else None,
                 "top_technologies": [
                     {"name": row["name"], "count": row["count"]} for row in top
                 ],
                 "by_category": {row["category"]: row["count"] for row in by_category},
+                "activity": [
+                    {"date": row["day"].isoformat(), "count": row["count"]}
+                    for row in activity
+                ],
             },
             status_code=200,
         )

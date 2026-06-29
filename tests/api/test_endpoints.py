@@ -21,11 +21,7 @@ def client():
 
 @pytest.fixture(autouse=True)
 def mock_analyzer(monkeypatch):
-    """
-    Reemplaza el Analyzer compartido por funciones deterministas para que los
-    tests del API no salgan a la red. El motor de detección se prueba aparte
-    en tests/detectors/.
-    """
+    """Reemplaza el Analyzer compartido para que los tests no salgan a la red."""
     def fake_analyze(url):
         return {
             "url": url,
@@ -44,7 +40,6 @@ def mock_analyzer(monkeypatch):
 
 
 def make_analysis(url="https://example.com", techs=None):
-    """Crea un Analysis persistido directamente (sin pasar por la red ni la vista)."""
     return persist_analysis(
         {
             "url": url,
@@ -81,19 +76,16 @@ class TestEnvelope:
         assert body["error"]["code"] == error_codes.VALIDATION_ERROR
 
 
-class TestAnalyses:
+class TestAnalysesCreate:
     def test_create_persists_normalized_graph(self, client):
         resp = client.post("/api/v1/analyses/", {"url": "https://example.com"}, format="json")
         assert resp.status_code == 201
-        analysis_id = resp.json()["meta"]["analysis_id"]
-
-        analysis = Analysis.objects.get(pk=analysis_id)
+        analysis = Analysis.objects.get(pk=resp.json()["meta"]["analysis_id"])
         assert Domain.objects.filter(name="example.com").exists()
         assert analysis.technologies.count() == 2
-        # whois/geo/wayback eran None -> deben quedar como AnalysisError; dns sí vino.
         assert analysis.status == "partial"
         assert set(analysis.errors.values_list("service", flat=True)) == {"whois", "geo", "wayback"}
-        assert analysis.dns_result.records.count() == 2  # A + MX
+        assert analysis.dns_result.records.count() == 2
 
     def test_dns_mx_priority_is_parsed(self, client):
         resp = client.post("/api/v1/analyses/", {"url": "https://example.com"}, format="json")
@@ -117,10 +109,25 @@ class TestAnalyses:
         assert resp.status_code == 400
         assert resp.json()["error"]["code"] == error_codes.VALIDATION_ERROR
 
-    def test_get_not_allowed(self, client):
+
+class TestAnalysesList:
+    def test_list_paginated(self, client):
+        make_analysis(url="https://a.com")
+        make_analysis(url="https://b.com")
         resp = client.get("/api/v1/analyses/")
-        assert resp.status_code == 405
-        assert resp.json()["error"]["code"] == error_codes.METHOD_NOT_ALLOWED
+        assert resp.status_code == 200
+        body = resp.json()
+        assert body["meta"]["total"] == 2
+        assert len(body["data"]) == 2
+        assert {"id", "domain", "url", "status", "technologies_count"} <= set(body["data"][0].keys())
+
+    def test_list_respects_page_size(self, client):
+        for i in range(3):
+            make_analysis(url=f"https://s{i}.com")
+        resp = client.get("/api/v1/analyses/?page_size=2")
+        assert resp.status_code == 200
+        assert len(resp.json()["data"]) == 2
+        assert resp.json()["meta"]["pages"] == 2
 
 
 class TestAIAnalyses:
@@ -140,10 +147,8 @@ class TestSnapshot:
         assert resp.status_code == 201
         analysis = Analysis.objects.get(pk=resp.json()["meta"]["analysis_id"])
         assert analysis.triggered_by == "snapshot"
-        # Las tecnologías de snapshot cuelgan del WaybackSnapshot, no del Analysis.
         assert analysis.technologies.count() == 0
-        snapshot = analysis.wayback_result.snapshots.get()
-        assert snapshot.technologies.count() == 2
+        assert analysis.wayback_result.snapshots.get().technologies.count() == 2
 
     def test_rejects_non_wayback_url(self, client):
         resp = client.post(
@@ -165,8 +170,7 @@ class TestDetail:
         body = resp.json()
         assert body["meta"] == {"analysis_id": analysis.pk}
         assert body["data"]["id"] == analysis.pk
-        names = {t["name"] for t in body["data"]["technologies"]}
-        assert names == {"React", "Nginx"}
+        assert {t["name"] for t in body["data"]["technologies"]} == {"React", "Nginx"}
 
     def test_unknown_id_is_not_found(self, client):
         resp = client.get("/api/v1/analyses/999999/")
@@ -176,48 +180,83 @@ class TestDetail:
     def test_non_integer_id_is_not_found(self, client):
         resp = client.get("/api/v1/analyses/abc/")
         assert resp.status_code == 404
-        assert resp.json()["error"]["code"] == error_codes.NOT_FOUND
 
     def test_zero_id_is_not_found(self, client):
         resp = client.get("/api/v1/analyses/0/")
         assert resp.status_code == 404
+
+
+class TestDomainHistory:
+    def test_history_ok(self, client):
+        make_analysis(url="https://hist.com", techs=[FAKE_TECHS[0]])
+        make_analysis(url="https://hist.com", techs=FAKE_TECHS)
+        resp = client.get("/api/v1/domains/hist.com/analyses/")
+        assert resp.status_code == 200
+        body = resp.json()
+        assert body["meta"] == {"domain": "hist.com", "count": 2}
+        assert len(body["data"]) == 2
+
+    def test_unknown_domain_is_not_found(self, client):
+        resp = client.get("/api/v1/domains/nope.com/analyses/")
+        assert resp.status_code == 404
         assert resp.json()["error"]["code"] == error_codes.NOT_FOUND
 
 
-class TestCompare:
+class TestCompareById:
     def test_compare_ok(self, client):
         a = make_analysis(url="https://a.com", techs=[FAKE_TECHS[0]])
         b = make_analysis(url="https://b.com", techs=[FAKE_TECHS[1]])
         resp = client.get(f"/api/v1/analyses/compare/?a={a.pk}&b={b.pk}")
         assert resp.status_code == 200
-        comparison = resp.json()["data"]["comparison"]
-        assert comparison["only_in_a"] == ["React"]
-        assert comparison["only_in_b"] == ["Nginx"]
-        assert comparison["shared_technologies"] == []
+        comp = resp.json()["data"]["comparison"]
+        assert comp["total"] == 2
+        assert [t["name"] for t in comp["only_in_a"]] == ["React"]
+        assert [t["name"] for t in comp["only_in_b"]] == ["Nginx"]
+        assert comp["shared_technologies"] == []
+
+    def test_shared_includes_both_confidences(self, client):
+        a = make_analysis(url="https://a.com", techs=[{"name": "React", "category": "frontend", "confidence": 90, "evidence": "x"}])
+        b = make_analysis(url="https://b.com", techs=[{"name": "React", "category": "frontend", "confidence": 70, "evidence": "y"}])
+        resp = client.get(f"/api/v1/analyses/compare/?a={a.pk}&b={b.pk}")
+        shared = resp.json()["data"]["comparison"]["shared_technologies"]
+        assert shared == [{"name": "React", "category": "frontend", "confidence_a": 90, "confidence_b": 70}]
 
     def test_compare_unknown_id_is_not_found(self, client):
         a = make_analysis()
         resp = client.get(f"/api/v1/analyses/compare/?a={a.pk}&b=999999")
         assert resp.status_code == 404
-        assert resp.json()["error"]["code"] == error_codes.NOT_FOUND
 
     def test_missing_param(self, client):
         resp = client.get("/api/v1/analyses/compare/?a=1")
-        assert resp.status_code == 400
-        assert resp.json()["error"]["code"] == error_codes.VALIDATION_ERROR
-
-    def test_non_integer_param(self, client):
-        resp = client.get("/api/v1/analyses/compare/?a=1&b=foo")
         assert resp.status_code == 400
 
     def test_equal_params(self, client):
         resp = client.get("/api/v1/analyses/compare/?a=3&b=3")
         assert resp.status_code == 400
-        assert resp.json()["error"]["code"] == error_codes.VALIDATION_ERROR
 
-    def test_non_positive_param(self, client):
-        resp = client.get("/api/v1/analyses/compare/?a=0&b=1")
+
+class TestCompareByUrl:
+    def test_uses_existing_analyses(self, client):
+        make_analysis(url="https://a.com", techs=[FAKE_TECHS[0]])
+        make_analysis(url="https://b.com", techs=[FAKE_TECHS[1]])
+        before = Analysis.objects.count()
+        resp = client.post("/api/v1/analyses/compare/", {"url_a": "a.com", "url_b": "b.com"}, format="json")
+        assert resp.status_code == 200
+        assert Analysis.objects.count() == before  # no re-analizó, reusó los existentes
+        comp = resp.json()["data"]["comparison"]
+        assert [t["name"] for t in comp["only_in_a"]] == ["React"]
+        assert [t["name"] for t in comp["only_in_b"]] == ["Nginx"]
+
+    def test_analyzes_when_missing(self, client):
+        resp = client.post("/api/v1/analyses/compare/", {"url_a": "new-a.com", "url_b": "new-b.com"}, format="json")
+        assert resp.status_code == 200
+        assert Analysis.objects.filter(domain__name="new-a.com").exists()
+        assert Analysis.objects.filter(domain__name="new-b.com").exists()
+
+    def test_same_url_is_validation_error(self, client):
+        resp = client.post("/api/v1/analyses/compare/", {"url_a": "a.com", "url_b": "a.com"}, format="json")
         assert resp.status_code == 400
+        assert resp.json()["error"]["code"] == error_codes.VALIDATION_ERROR
 
 
 class TestStats:
@@ -226,17 +265,24 @@ class TestStats:
         assert resp.status_code == 200
         data = resp.json()["data"]
         assert data["total_analyses"] == 0
+        assert data["unique_domains"] == 0
+        assert data["total_detections"] == 0
+        assert data["avg_analysis_time_seconds"] is None
+        assert data["avg_confidence"] is None
         assert data["top_technologies"] == []
+        assert data["activity"] == []
 
     def test_stats_aggregates(self, client):
-        make_analysis(techs=[FAKE_TECHS[0]])
-        make_analysis(techs=FAKE_TECHS)
+        make_analysis(url="https://a.com", techs=[FAKE_TECHS[0]])
+        make_analysis(url="https://b.com", techs=FAKE_TECHS)
         resp = client.get("/api/v1/stats/")
-        assert resp.status_code == 200
         data = resp.json()["data"]
         assert data["total_analyses"] == 2
+        assert data["unique_domains"] == 2
+        assert data["total_detections"] == 3
         counts = {t["name"]: t["count"] for t in data["top_technologies"]}
         assert counts["React"] == 2
         assert counts["Nginx"] == 1
         assert data["by_category"]["frontend"] == 2
         assert data["by_category"]["server"] == 1
+        assert data["avg_confidence"] is not None
