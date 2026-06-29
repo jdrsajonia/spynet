@@ -49,21 +49,23 @@ class Analyzer:  # patrón Facade
     # Análisis completo
     # ──────────────────────────────────────────────────────────────────────
 
-    def analyze(self, url: str, depth_data: bool = False) -> dict:
+    def analyze(self, url: str, depth_data: bool = False, include_wayback: bool = True) -> dict:
         url = self._normalize_url(url)
         logger.info("Starting analysis for %s", url)
 
-        # 1. Servicios de infraestructura (concurrentes) — CDNDetector reutiliza NS e IP
+        # 1. Servicios de infraestructura (concurrentes) — CDNDetector reutiliza NS e IP.
+        # Wayback es opcional: Compare lo excluye porque no usa el histórico y agrega
+        # bastante latencia (comparar no necesita snapshots).
         with ThreadPoolExecutor(max_workers=4) as executor:
             future_dns    = executor.submit(self._dns.fetch_service, url)
             future_geo    = executor.submit(self._geo.fetch_service, url, depth_data)
             future_whois  = executor.submit(self._whois.fetch_service, url, depth_data)
-            future_wayback = executor.submit(self._wayback.fetch_service, url)
+            future_wayback = executor.submit(self._wayback.fetch_service, url) if include_wayback else None
 
         dns_data   = future_dns.result()
         geo_data   = future_geo.result()
         whois_data = future_whois.result()
-        wayback    = future_wayback.result()
+        wayback    = future_wayback.result() if future_wayback else None
 
         # 2. Petición HTTP principal al sitio
         page = self._fetch_page(url)
@@ -81,14 +83,18 @@ class Analyzer:  # patrón Facade
             "Analysis complete for %s: %d technologies detected",
             url, len(technologies)
         )
-        return {
+        result = {
             "url":          url,
             "technologies": technologies,
             "dns":          dns_data,
             "whois":        whois_data,
             "geo":          geo_data,
-            "wayback":      wayback,
         }
+        # La clave 'wayback' solo aparece si se ejecutó. Ausente = excluida a
+        # propósito (no es un fallo); None = se intentó pero falló.
+        if include_wayback:
+            result["wayback"] = wayback
+        return result
 
     # ──────────────────────────────────────────────────────────────────────
     # RF-19: Análisis pasivo de snapshot histórico
@@ -121,6 +127,46 @@ class Analyzer:  # patrón Facade
             snapshot_url, len(technologies)
         )
         return {"snapshot_url": snapshot_url, "technologies": technologies}
+
+    # ──────────────────────────────────────────────────────────────────────
+    # Vista Historical: evolución del stack a lo largo de las capturas de Wayback
+    # ──────────────────────────────────────────────────────────────────────
+
+    def analyze_history(self, url: str) -> dict:
+        """
+        Toma las ~12 capturas de Wayback del dominio (las mismas que encuentra un
+        análisis normal) y corre el análisis pasivo de tecnologías sobre CADA una,
+        para ver cómo evolucionó el stack en el tiempo (vista Historical).
+
+        Pesado: una descarga por captura; se hacen en paralelo. Si no hay
+        historial, devuelve la lista de snapshots vacía sin error.
+        """
+        url = self._normalize_url(url)
+        logger.info("Starting historical analysis for %s", url)
+
+        wayback   = self._wayback.fetch_service(url) or {}
+        snapshots = wayback.get("snapshots", [])
+        if not snapshots:
+            logger.info("No Wayback snapshots for %s", url)
+            return {"url": url, "archive_pages": wayback.get("archive_pages"), "snapshots": []}
+
+        def _analyse_one(snap: dict) -> dict:
+            result = self.analyze_snapshot(snap["url"])
+            return {
+                "timestamp":    snap["timestamp"],
+                "url":          snap["url"],
+                "technologies": (result or {}).get("technologies", []),
+            }
+
+        with ThreadPoolExecutor(max_workers=4) as executor:
+            analysed = list(executor.map(_analyse_one, snapshots))
+
+        logger.info("Historical analysis complete for %s: %d snapshots analysed", url, len(analysed))
+        return {
+            "url":           url,
+            "archive_pages": wayback.get("archive_pages"),
+            "snapshots":     analysed,
+        }
 
     # ──────────────────────────────────────────────────────────────────────
     # Helpers privados

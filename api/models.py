@@ -26,7 +26,9 @@ class Domain(models.Model):
 
 class Analysis(models.Model):
     STATUS_CHOICES = [("completed", "completed"), ("partial", "partial"), ("failed", "failed")]
-    TRIGGER_CHOICES = [("api", "api"), ("snapshot", "snapshot"), ("cli", "cli")]
+    TRIGGER_CHOICES = [
+        ("api", "api"), ("snapshot", "snapshot"), ("historical", "historical"), ("cli", "cli"),
+    ]
 
     domain       = models.ForeignKey(Domain, related_name="analyses", on_delete=models.CASCADE)
     source_url   = models.URLField(max_length=2000)

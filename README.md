@@ -196,6 +196,39 @@ GET http://127.0.0.1:8000/api/v1/analyses/1/
 
 ---
 
+## 🖥️ Frontend (API Tester)
+
+A **decoupled** React + Vite app lives in [`frontend/`](frontend/). For now it is
+a raw API tester: each tab runs one endpoint and dumps the JSON response on
+screen. It is the base for the real views (Dashboard, Compare, Historical…).
+
+### Requirements
+- Node.js 18+ and npm
+- The backend running on `http://localhost:8000` (`python manage.py runserver`)
+
+### Run
+
+```bash
+cd frontend
+npm install        # download dependencies (first time only)
+npm run dev        # start the dev server at http://localhost:5173
+```
+
+Port `5173` is already allowed in the backend's CORS configuration. Keep **both**
+servers running at once: Django on `:8000` and Vite on `:5173`.
+
+The backend URL is configured in `frontend/.env`:
+
+```
+VITE_API_BASE_URL=http://localhost:8000/api/v1
+```
+
+> **Tip:** live analysis hits external services (DNS, WHOIS, Geo, Wayback), so
+> heavy domains like `google.com` can take a while. Use `example.com` for quick
+> tests.
+
+---
+
 ## 📌 Status
 
 Project under development for **Software Engineering II**.

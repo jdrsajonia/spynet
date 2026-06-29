@@ -1,7 +1,7 @@
 import pytest
 from rest_framework.test import APIClient
 
-from api.models import Analysis, Domain, Technology
+from api.models import Analysis, Domain, Technology, WaybackResult
 from api.persistence import persist_analysis
 from api.utils import error_codes
 
@@ -22,21 +22,33 @@ def client():
 @pytest.fixture(autouse=True)
 def mock_analyzer(monkeypatch):
     """Reemplaza el Analyzer compartido para que los tests no salgan a la red."""
-    def fake_analyze(url):
-        return {
+    def fake_analyze(url, include_wayback=True):
+        result = {
             "url": url,
             "technologies": FAKE_TECHS,
             "dns": {"A": ["1.2.3.4"], "MX": ["10 mail.example.com"]},
             "whois": None,
             "geo": None,
-            "wayback": None,
         }
+        if include_wayback:
+            result["wayback"] = None  # ausente si se excluye (Compare)
+        return result
 
     def fake_snapshot(url):
         return {"snapshot_url": url, "technologies": FAKE_TECHS}
 
+    def fake_history(url):
+        return {
+            "url": url, "archive_pages": 5,
+            "snapshots": [
+                {"timestamp": "20200101000000", "url": "https://web.archive.org/web/20200101000000/https://x.com/", "technologies": [FAKE_TECHS[0]]},
+                {"timestamp": "20210101000000", "url": "https://web.archive.org/web/20210101000000/https://x.com/", "technologies": FAKE_TECHS},
+            ],
+        }
+
     monkeypatch.setattr("api.views._analyzer.analyze", fake_analyze)
     monkeypatch.setattr("api.views._analyzer.analyze_snapshot", fake_snapshot)
+    monkeypatch.setattr("api.views._analyzer.analyze_history", fake_history)
 
 
 def make_analysis(url="https://example.com", techs=None):
@@ -162,6 +174,32 @@ class TestSnapshot:
         assert resp.status_code == 400
 
 
+class TestHistorical:
+    def test_analyzes_all_snapshots(self, client):
+        resp = client.post("/api/v1/analyses/historical/", {"url": "x.com"}, format="json")
+        assert resp.status_code == 201
+        analysis = Analysis.objects.get(pk=resp.json()["meta"]["analysis_id"])
+        assert analysis.triggered_by == "historical"
+        snaps = analysis.wayback_result.snapshots.all()
+        assert snaps.count() == 2
+        # Las tecnologías cuelgan de cada snapshot (1 + 2 = 3 en el mock).
+        assert sum(s.technologies.count() for s in snaps) == 3
+
+    def test_empty_history_not_persisted(self, client, monkeypatch):
+        monkeypatch.setattr(
+            "api.views._analyzer.analyze_history",
+            lambda url: {"url": url, "archive_pages": 0, "snapshots": []},
+        )
+        resp = client.post("/api/v1/analyses/historical/", {"url": "x.com"}, format="json")
+        assert resp.status_code == 200
+        assert resp.json()["data"]["snapshots"] == []
+        assert not Analysis.objects.exists()
+
+    def test_missing_url(self, client):
+        resp = client.post("/api/v1/analyses/historical/", {}, format="json")
+        assert resp.status_code == 400
+
+
 class TestDetail:
     def test_retrieve_ok(self, client):
         analysis = make_analysis()
@@ -252,6 +290,13 @@ class TestCompareByUrl:
         assert resp.status_code == 200
         assert Analysis.objects.filter(domain__name="new-a.com").exists()
         assert Analysis.objects.filter(domain__name="new-b.com").exists()
+
+    def test_compare_analysis_excludes_wayback(self, client):
+        # Compare analiza en vivo SIN Wayback: ni WaybackResult ni error de wayback.
+        client.post("/api/v1/analyses/compare/", {"url_a": "na.com", "url_b": "nb.com"}, format="json")
+        a = Analysis.objects.get(domain__name="na.com")
+        assert not WaybackResult.objects.filter(analysis=a).exists()
+        assert not a.errors.filter(service="wayback").exists()
 
     def test_same_url_is_validation_error(self, client):
         resp = client.post("/api/v1/analyses/compare/", {"url_a": "a.com", "url_b": "a.com"}, format="json")

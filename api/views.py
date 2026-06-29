@@ -9,7 +9,7 @@ from whois import extract_domain
 
 from analyzer import Analyzer
 from api.models import Analysis, Domain, Technology
-from api.persistence import persist_analysis, persist_snapshot
+from api.persistence import persist_analysis, persist_history, persist_snapshot
 from api.serializers import (
     AnalysisInputSerializer,
     CompareQuerySerializer,
@@ -47,7 +47,9 @@ def _resolve_or_analyze(url: str) -> Analysis:
         .first()
     )
     if analysis is None:
-        analysis = persist_analysis(_analyzer.analyze(url), triggered_by="api")
+        # Comparar no usa el histórico → se excluye Wayback para no pagar su latencia.
+        result = _analyzer.analyze(url, include_wayback=False)
+        analysis = persist_analysis(result, triggered_by="api")
     return analysis
 
 
@@ -176,6 +178,34 @@ class SnapshotAnalysisView(APIView):
             raise NotFound("The snapshot could not be fetched.")
 
         analysis = persist_snapshot(result, duration_ms=duration_ms)
+        return success_response(
+            data=analysis.to_dict(),
+            meta={"analysis_id": analysis.pk},
+            status_code=201,
+        )
+
+
+class HistoricalAnalysisView(APIView):
+    throttle_scope = "analyze"  # pesado: descarga y analiza ~12 capturas
+
+    def post(self, request):
+        serializer = AnalysisInputSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        url = serializer.validated_data["url"]
+        started = time.monotonic()
+        result = _analyzer.analyze_history(url)
+        duration_ms = int((time.monotonic() - started) * 1000)
+
+        if not result["snapshots"]:
+            # Sin historial: estado vacío limpio, sin persistir un registro vacío.
+            return success_response(
+                data={"url": url, "snapshots": []},
+                meta={"snapshots": 0},
+                status_code=200,
+            )
+
+        analysis = persist_history(result, duration_ms=duration_ms)
         return success_response(
             data=analysis.to_dict(),
             meta={"analysis_id": analysis.pk},

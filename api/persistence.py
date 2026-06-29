@@ -24,7 +24,10 @@ _SERVICE_FIELDS = ("whois", "geo", "dns", "wayback")
 def persist_analysis(result: dict, *, triggered_by: str = "api", duration_ms: int | None = None) -> Analysis:
     """Persiste un análisis en vivo completo (Domain → Analysis → records)."""
     domain, _ = Domain.objects.get_or_create(name=extract_domain(result["url"]))
-    status = "partial" if any(result.get(f) is None for f in _SERVICE_FIELDS) else "completed"
+    # Solo se consideran los servicios que SE INTENTARON (la clave está presente).
+    # Compare excluye 'wayback' a propósito → no debe contar como fallo.
+    attempted = [f for f in _SERVICE_FIELDS if f in result]
+    status = "partial" if any(result.get(f) is None for f in attempted) else "completed"
 
     analysis = Analysis.objects.create(
         domain=domain, source_url=result["url"],
@@ -37,7 +40,8 @@ def persist_analysis(result: dict, *, triggered_by: str = "api", duration_ms: in
     _save_whois(analysis, result.get("whois"))
     _save_geo(analysis, result.get("geo"))
     _save_dns(analysis, result.get("dns"))
-    _save_wayback(analysis, result.get("wayback"))
+    if "wayback" in result:
+        _save_wayback(analysis, result["wayback"])
 
     return analysis
 
@@ -65,6 +69,39 @@ def persist_snapshot(result: dict, *, duration_ms: int | None = None) -> Analysi
         url=snapshot_url,
     )
     _save_technologies(result.get("technologies", []), snapshot=snapshot)
+
+    return analysis
+
+
+@transaction.atomic
+def persist_history(result: dict, *, duration_ms: int | None = None) -> Analysis:
+    """
+    Persiste el análisis histórico: un Analysis (triggered_by='historical') con un
+    WaybackResult que agrupa las ~12 capturas, cada una con sus tecnologías.
+    Mapea 1:1 con el ERD: WaybackResult -> WaybackSnapshot -> Technology.
+    """
+    domain, _ = Domain.objects.get_or_create(name=extract_domain(result["url"]))
+    analysis = Analysis.objects.create(
+        domain=domain, source_url=result["url"],
+        status="completed", triggered_by="historical", duration_ms=duration_ms,
+    )
+
+    snapshots  = result.get("snapshots", [])
+    timestamps = sorted(s["timestamp"] for s in snapshots if s.get("timestamp"))
+    wayback = WaybackResult.objects.create(
+        analysis=analysis,
+        snapshot_count=len(snapshots),
+        archive_pages=result.get("archive_pages"),
+        first_snapshot_at=_parse_ts(timestamps[0]) if timestamps else None,
+        last_snapshot_at=_parse_ts(timestamps[-1]) if timestamps else None,
+    )
+    for snap in snapshots:
+        ws = WaybackSnapshot.objects.create(
+            wayback_result=wayback,
+            timestamp=snap.get("timestamp", ""),
+            url=snap.get("url", ""),
+        )
+        _save_technologies(snap.get("technologies", []), snapshot=ws)
 
     return analysis
 
