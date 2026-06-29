@@ -1,10 +1,12 @@
-from collections import Counter
+import time
 
+from django.db.models import Count
 from rest_framework.exceptions import NotFound
 from rest_framework.views import APIView
 
 from analyzer import Analyzer
-from api.models import Analysis
+from api.models import Analysis, Technology
+from api.persistence import persist_analysis, persist_snapshot
 from api.serializers import (
     AnalysisInputSerializer,
     CompareQuerySerializer,
@@ -26,11 +28,11 @@ class AnalysisCreateView(APIView):
         serializer.is_valid(raise_exception=True)
 
         url = serializer.validated_data["url"]
+        started = time.monotonic()
         result = _analyzer.analyze(url)
+        duration_ms = int((time.monotonic() - started) * 1000)
 
-        analysis = Analysis.from_result(result)
-        analysis.save()
-
+        analysis = persist_analysis(result, triggered_by="api", duration_ms=duration_ms)
         return success_response(
             data=analysis.to_dict(),
             meta={"analysis_id": analysis.pk},
@@ -51,9 +53,19 @@ class SnapshotAnalysisView(APIView):
         serializer.is_valid(raise_exception=True)
 
         snapshot_url = serializer.validated_data["snapshot_url"]
+        started = time.monotonic()
         result = _analyzer.analyze_snapshot(snapshot_url)
+        duration_ms = int((time.monotonic() - started) * 1000)
 
-        return success_response(data=result, status_code=201)
+        if result is None:
+            raise NotFound("The snapshot could not be fetched.")
+
+        analysis = persist_snapshot(result, duration_ms=duration_ms)
+        return success_response(
+            data=analysis.to_dict(),
+            meta={"analysis_id": analysis.pk},
+            status_code=201,
+        )
 
 
 class AnalysisDetailView(APIView):
@@ -82,8 +94,8 @@ class AnalysisCompareView(APIView):
             raise NotFound("One or both analyses were not found.")
 
         a, b = analyses[id_a], analyses[id_b]
-        names_a = {t["name"] for t in a.technologies}
-        names_b = {t["name"] for t in b.technologies}
+        names_a = set(a.technologies.values_list("name", flat=True))
+        names_b = set(b.technologies.values_list("name", flat=True))
 
         return success_response(
             data={
@@ -102,22 +114,23 @@ class AnalysisCompareView(APIView):
 
 class StatsView(APIView):
     def get(self, request):
-        analyses = Analysis.objects.all()
-        tech_counter = Counter()
-        category_counter = Counter()
-        for analysis in analyses:
-            for tech in analysis.technologies:
-                tech_counter[tech["name"]] += 1
-                category_counter[tech.get("category", "unknown")] += 1
-
+        top = (
+            Technology.objects.values("name")
+            .annotate(count=Count("id"))
+            .order_by("-count", "name")[:10]
+        )
+        by_category = (
+            Technology.objects.values("category")
+            .annotate(count=Count("id"))
+            .order_by("category")
+        )
         return success_response(
             data={
-                "total_analyses": analyses.count(),
+                "total_analyses": Analysis.objects.count(),
                 "top_technologies": [
-                    {"name": name, "count": count}
-                    for name, count in tech_counter.most_common(10)
+                    {"name": row["name"], "count": row["count"]} for row in top
                 ],
-                "by_category": dict(category_counter),
+                "by_category": {row["category"]: row["count"] for row in by_category},
             },
             status_code=200,
         )

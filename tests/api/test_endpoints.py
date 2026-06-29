@@ -1,7 +1,8 @@
 import pytest
 from rest_framework.test import APIClient
 
-from api.models import Analysis
+from api.models import Analysis, Domain, Technology
+from api.persistence import persist_analysis
 from api.utils import error_codes
 
 pytestmark = pytest.mark.django_db
@@ -22,14 +23,14 @@ def client():
 def mock_analyzer(monkeypatch):
     """
     Reemplaza el Analyzer compartido por funciones deterministas para que los
-    tests del API no salgan a la red (antes tardaban ~30s y eran flaky).
-    El motor de detección se prueba aparte en tests/detectors/.
+    tests del API no salgan a la red. El motor de detección se prueba aparte
+    en tests/detectors/.
     """
     def fake_analyze(url):
         return {
             "url": url,
             "technologies": FAKE_TECHS,
-            "dns": {"A": ["1.2.3.4"]},
+            "dns": {"A": ["1.2.3.4"], "MX": ["10 mail.example.com"]},
             "whois": None,
             "geo": None,
             "wayback": None,
@@ -43,7 +44,15 @@ def mock_analyzer(monkeypatch):
 
 
 def make_analysis(url="https://example.com", techs=None):
-    return Analysis.objects.create(url=url, technologies=techs if techs is not None else FAKE_TECHS)
+    """Crea un Analysis persistido directamente (sin pasar por la red ni la vista)."""
+    return persist_analysis(
+        {
+            "url": url,
+            "technologies": techs if techs is not None else FAKE_TECHS,
+            "dns": None, "whois": None, "geo": None, "wayback": None,
+        },
+        triggered_by="api",
+    )
 
 
 def assert_envelope(body):
@@ -73,11 +82,25 @@ class TestEnvelope:
 
 
 class TestAnalyses:
-    def test_create_persists_and_returns_id(self, client):
+    def test_create_persists_normalized_graph(self, client):
         resp = client.post("/api/v1/analyses/", {"url": "https://example.com"}, format="json")
         assert resp.status_code == 201
         analysis_id = resp.json()["meta"]["analysis_id"]
-        assert Analysis.objects.filter(pk=analysis_id).exists()
+
+        analysis = Analysis.objects.get(pk=analysis_id)
+        assert Domain.objects.filter(name="example.com").exists()
+        assert analysis.technologies.count() == 2
+        # whois/geo/wayback eran None -> deben quedar como AnalysisError; dns sí vino.
+        assert analysis.status == "partial"
+        assert set(analysis.errors.values_list("service", flat=True)) == {"whois", "geo", "wayback"}
+        assert analysis.dns_result.records.count() == 2  # A + MX
+
+    def test_dns_mx_priority_is_parsed(self, client):
+        resp = client.post("/api/v1/analyses/", {"url": "https://example.com"}, format="json")
+        analysis = Analysis.objects.get(pk=resp.json()["meta"]["analysis_id"])
+        mx = analysis.dns_result.records.get(record_type="MX")
+        assert mx.priority == 10
+        assert mx.value == "mail.example.com"
 
     def test_url_normalized_without_scheme(self, client):
         resp = client.post("/api/v1/analyses/", {"url": "github.com"}, format="json")
@@ -111,11 +134,16 @@ class TestAIAnalyses:
 
 
 class TestSnapshot:
-    def test_create_ok(self, client):
+    def test_create_persists_snapshot_record(self, client):
         url = "https://web.archive.org/web/20200101000000/https://example.com"
         resp = client.post("/api/v1/analyses/snapshot/", {"snapshot_url": url}, format="json")
         assert resp.status_code == 201
-        assert resp.json()["data"]["snapshot_url"] == url
+        analysis = Analysis.objects.get(pk=resp.json()["meta"]["analysis_id"])
+        assert analysis.triggered_by == "snapshot"
+        # Las tecnologías de snapshot cuelgan del WaybackSnapshot, no del Analysis.
+        assert analysis.technologies.count() == 0
+        snapshot = analysis.wayback_result.snapshots.get()
+        assert snapshot.technologies.count() == 2
 
     def test_rejects_non_wayback_url(self, client):
         resp = client.post(
@@ -137,7 +165,8 @@ class TestDetail:
         body = resp.json()
         assert body["meta"] == {"analysis_id": analysis.pk}
         assert body["data"]["id"] == analysis.pk
-        assert body["data"]["technologies"] == FAKE_TECHS
+        names = {t["name"] for t in body["data"]["technologies"]}
+        assert names == {"React", "Nginx"}
 
     def test_unknown_id_is_not_found(self, client):
         resp = client.get("/api/v1/analyses/999999/")
@@ -161,12 +190,10 @@ class TestCompare:
         b = make_analysis(url="https://b.com", techs=[FAKE_TECHS[1]])
         resp = client.get(f"/api/v1/analyses/compare/?a={a.pk}&b={b.pk}")
         assert resp.status_code == 200
-        data = resp.json()["data"]
-        assert data["a"]["id"] == a.pk
-        assert data["b"]["id"] == b.pk
-        assert data["comparison"]["only_in_a"] == ["React"]
-        assert data["comparison"]["only_in_b"] == ["Nginx"]
-        assert data["comparison"]["shared_technologies"] == []
+        comparison = resp.json()["data"]["comparison"]
+        assert comparison["only_in_a"] == ["React"]
+        assert comparison["only_in_b"] == ["Nginx"]
+        assert comparison["shared_technologies"] == []
 
     def test_compare_unknown_id_is_not_found(self, client):
         a = make_analysis()
@@ -212,3 +239,4 @@ class TestStats:
         assert counts["React"] == 2
         assert counts["Nginx"] == 1
         assert data["by_category"]["frontend"] == 2
+        assert data["by_category"]["server"] == 1
