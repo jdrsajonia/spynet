@@ -1,0 +1,45 @@
+/*
+ * Design tokens — la única fuente de verdad del estilo SpyNet.
+ * Cambiar un color/espaciado aquí lo cambia en toda la app. Ningún componente
+ * hardcodea valores: todos consumen estas variables.
+ */
+:root {
+  /* superficies */
+  --bg:            #060912;
+  --bg-1:          #0c1322;
+  --panel:         rgba(18, 26, 46, 0.72);
+  --panel-border:  rgba(86, 124, 209, 0.18);
+
+  /* texto */
+  --text:          #e7eaf2;
+  --text-muted:    #8a93a8;
+  --text-dim:      #5c6478;
+
+  /* acentos */
+  --blue:          #3b82f6;
+  --blue-soft:     rgba(59, 130, 246, 0.15);
+  --red:           #ef4444;
+  --green:         #22c55e;
+  --amber:         #f59e0b;
+
+  /* forma */
+  --radius:        14px;
+  --radius-sm:     9px;
+  --sidebar-w:     232px;
+  --gap:           18px;
+
+  --font:          "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono:          ui-monospace, "Cascadia Code", "Consolas", monospace;
+  --shadow:        0 1px 0 rgba(255, 255, 255, 0.03) inset, 0 8px 24px rgba(0, 0, 0, 0.35);
+}
+
+* { box-sizing: border-box; }
+html, body, #root { height: 100%; margin: 0; }
+
+body {
+  background: radial-gradient(1200px 600px at 72% -12%, #16234a 0%, var(--bg) 55%);
+  background-attachment: fixed;
+  color: var(--text);
+  font-family: var(--font);
+  -webkit-font-smoothing: antialiased;
+}

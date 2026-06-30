@@ -1,144 +1,162 @@
-import { useState } from "react";
-import { call, API_BASE } from "./api";
+import { useState, useEffect } from "react";
 
-// Cada pestaña = un endpoint. `fields` son los inputs que ese endpoint necesita
-// (algunos ninguno, algunos un id o dominio, Compare pide dos URLs).
-const TABS = [
-  {
-    key: "analyze",
-    label: "Analyze",
-    fields: [{ name: "url", placeholder: "github.com" }],
-    run: (v) => call("/analyses/", { method: "POST", body: JSON.stringify({ url: v.url }) }),
-  },
-  {
-    key: "snapshot",
-    label: "Snapshot",
-    fields: [{ name: "snapshot_url", placeholder: "https://web.archive.org/web/2023.../https://github.com/" }],
-    run: (v) => call("/analyses/snapshot/", { method: "POST", body: JSON.stringify({ snapshot_url: v.snapshot_url }) }),
-  },
-  {
-    key: "historical",
-    label: "Historical",
-    fields: [{ name: "url", placeholder: "github.com (analiza ~12 capturas, es lento)" }],
-    run: (v) => call("/analyses/historical/", { method: "POST", body: JSON.stringify({ url: v.url }) }),
-  },
-  {
-    key: "list",
-    label: "List",
-    fields: [],
-    run: () => call("/analyses/"),
-  },
-  {
-    key: "detail",
-    label: "Detail",
-    fields: [{ name: "id", placeholder: "1 (id del análisis)" }],
-    run: (v) => call(`/analyses/${v.id}/`),
-  },
-  {
-    key: "compare",
-    label: "Compare",
-    fields: [
-      { name: "url_a", placeholder: "github.com" },
-      { name: "url_b", placeholder: "vercel.com" },
-    ],
-    run: (v) => call("/analyses/compare/", { method: "POST", body: JSON.stringify({ url_a: v.url_a, url_b: v.url_b }) }),
-  },
-  {
-    key: "history",
-    label: "History",
-    fields: [{ name: "domain", placeholder: "github.com (dominio)" }],
-    run: (v) => call(`/domains/${v.domain}/analyses/`),
-  },
-  {
-    key: "stats",
-    label: "Stats",
-    fields: [],
-    run: () => call("/stats/"),
-  },
+import Sidebar from "./components/Sidebar";
+import Topbar from "./components/Topbar";
+import { Icon } from "./components/icons";
+import AnalyseView from "./views/AnalyseView";
+import CompareView from "./views/CompareView";
+import DashboardView from "./views/DashboardView";
+import ApiTesterView from "./views/ApiTesterView";
+import { call } from "./api";
+
+import "./styles/tokens.css";
+import "./styles/layout.css";
+import "./styles/analyse.css";
+import "./styles/compare.css";
+import "./styles/dashboard.css";
+
+// El contenedor: aquí vive el ESTADO y la LÓGICA (qué se pide al backend). Las
+// vistas y el shell son presentacionales y solo reciben props. Esto mantiene la
+// lógica separada de la presentación.
+const NAV = [
+  { key: "analyse",    label: "Analyse",    icon: Icon.analyse },
+  { key: "historical", label: "Historical", icon: Icon.historical, disabled: true },
+  { key: "dashboard",  label: "Dashboard",  icon: Icon.dashboard },
+  { key: "compare",    label: "Compare",    icon: Icon.compare },
+  { key: "apidocs",    label: "API Docs",   icon: Icon.apidocs,    disabled: true },
+  { key: "tester",     label: "API Tester", icon: Icon.tester },
 ];
 
 export default function App() {
-  const [activeKey, setActiveKey] = useState(TABS[0].key);
-  const [values, setValues] = useState({});
-  const [output, setOutput] = useState("");
+  const [view, setView] = useState("analyse");
+  const [data, setData] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  // Carga diferida de Wayback. status: idle | loading | done | failed
+  const [wayback, setWayback] = useState({ status: "idle", data: null });
 
-  const tab = TABS.find((t) => t.key === activeKey);
+  const [cmpData, setCmpData] = useState(null);
+  const [cmpLoading, setCmpLoading] = useState(false);
+  const [cmpError, setCmpError] = useState(null);
 
-  function switchTab(key) {
-    setActiveKey(key);
-    setValues({});
-    setOutput("");
-  }
+  const [dashData, setDashData] = useState(null);
+  const [dashLoading, setDashLoading] = useState(false);
+  const [dashError, setDashError] = useState(null);
 
-  async function handleGo() {
+  // El dashboard es de solo lectura: se carga al entrar a la pestaña.
+  useEffect(() => {
+    if (view !== "dashboard" || dashData || dashLoading) return;
+    (async () => {
+      setDashLoading(true);
+      setDashError(null);
+      try {
+        const [statsRes, listRes] = await Promise.all([
+          call("/stats/"),
+          call("/analyses/?page_size=6"),
+        ]);
+        if (statsRes.body.success && listRes.body.success) {
+          setDashData({ stats: statsRes.body.data, recent: listRes.body.data });
+        } else {
+          setDashError("Error cargando el dashboard.");
+        }
+      } catch {
+        setDashError("No se pudo conectar con el backend (¿corriendo en :8000?).");
+      } finally {
+        setDashLoading(false);
+      }
+    })();
+  }, [view, dashData, dashLoading]);
+
+  async function runAnalyze(url) {
+    if (!url.trim()) return;
+    setView("analyse");
     setLoading(true);
-    setOutput("Loading…");
+    setError(null);
+    setData(null);
+    setWayback({ status: "idle", data: null });
     try {
-      const result = await tab.run(values);
-      setOutput(JSON.stringify(result, null, 2));
-    } catch (err) {
-      setOutput(
-        "Request failed: " + err.message +
-        "\n\n¿El backend está corriendo en :8000? ¿Aplicaste CORS?"
-      );
+      const { status, body } = await call("/analyses/", {
+        method: "POST",
+        body: JSON.stringify({ url }),
+      });
+      if (body.success) {
+        setData(body.data);
+        loadWayback(body.data.id);   // en segundo plano, sin bloquear
+      } else {
+        setError(body.error?.message || `Error ${status}`);
+      }
+    } catch {
+      setError("No se pudo conectar con el backend (¿corriendo en :8000?).");
     } finally {
       setLoading(false);
     }
   }
 
+  // Pide Wayback aparte. Reintenta solo hasta 3 veces (Wayback suele estar lento);
+  // si tras eso no aparece, queda en "failed" y el usuario puede reintentar a mano.
+  async function loadWayback(id, attempt = 1) {
+    setWayback({ status: "loading", data: null });
+    try {
+      const { body } = await call(`/analyses/${id}/wayback/`, { method: "POST" });
+      if (body.success && body.data && body.data.snapshots?.length) {
+        setWayback({ status: "done", data: body.data });
+      } else if (attempt < 3) {
+        setTimeout(() => loadWayback(id, attempt + 1), 2500);
+      } else {
+        setWayback({ status: "failed", data: null });
+      }
+    } catch {
+      if (attempt < 3) setTimeout(() => loadWayback(id, attempt + 1), 2500);
+      else setWayback({ status: "failed", data: null });
+    }
+  }
+
+  async function runCompare(urlA, urlB) {
+    if (!urlA.trim() || !urlB.trim()) return;
+    setCmpLoading(true);
+    setCmpError(null);
+    setCmpData(null);
+    try {
+      const { status, body } = await call("/analyses/compare/", {
+        method: "POST",
+        body: JSON.stringify({ url_a: urlA, url_b: urlB }),
+      });
+      if (body.success) setCmpData(body.data);
+      else setCmpError(body.error?.message || `Error ${status}`);
+    } catch {
+      setCmpError("No se pudo conectar con el backend (¿corriendo en :8000?).");
+    } finally {
+      setCmpLoading(false);
+    }
+  }
+
   return (
-    <div style={styles.page}>
-      <h1 style={{ margin: 0 }}>SpyNet — API Tester</h1>
-      <p style={styles.base}>Base URL: {API_BASE}</p>
-
-      <div style={styles.tabs}>
-        {TABS.map((t) => (
-          <button
-            key={t.key}
-            onClick={() => switchTab(t.key)}
-            style={{
-              ...styles.tab,
-              background: t.key === activeKey ? "#2563eb" : "#e5e7eb",
-              color: t.key === activeKey ? "#fff" : "#111",
-            }}
-          >
-            {t.label}
-          </button>
-        ))}
+    <div className="app">
+      <Sidebar items={NAV} active={view} onSelect={setView} />
+      <div>
+        <Topbar onSearch={runAnalyze} busy={loading} />
+        <main className="content">
+          {view === "analyse" && (
+            <AnalyseView
+              data={data}
+              loading={loading}
+              error={error}
+              wayback={wayback}
+              onRetryWayback={() => data?.id && loadWayback(data.id)}
+            />
+          )}
+          {view === "compare" && (
+            <CompareView data={cmpData} loading={cmpLoading} error={cmpError} onCompare={runCompare} />
+          )}
+          {view === "dashboard" && (
+            <DashboardView data={dashData} loading={dashLoading} error={dashError} />
+          )}
+          {view === "tester" && <ApiTesterView />}
+          {!["analyse", "compare", "dashboard", "tester"].includes(view) && (
+            <div className="placeholder">— vista «{view}» pendiente —</div>
+          )}
+        </main>
       </div>
-
-      <div style={styles.form}>
-        {tab.fields.length === 0 && (
-          <p style={{ color: "#666", margin: "0 0 8px" }}>Este endpoint no necesita parámetros.</p>
-        )}
-        {tab.fields.map((f) => (
-          <input
-            key={f.name}
-            placeholder={f.placeholder}
-            value={values[f.name] || ""}
-            onChange={(e) => setValues({ ...values, [f.name]: e.target.value })}
-            onKeyDown={(e) => e.key === "Enter" && handleGo()}
-            style={styles.input}
-          />
-        ))}
-        <button onClick={handleGo} disabled={loading} style={styles.go}>
-          {loading ? "…" : "Go"}
-        </button>
-      </div>
-
-      <pre style={styles.output}>{output || "— sin resultado todavía —"}</pre>
     </div>
   );
 }
-
-const styles = {
-  page: { fontFamily: "system-ui, sans-serif", maxWidth: 900, margin: "0 auto", padding: 24 },
-  base: { color: "#6b7280", marginTop: 4 },
-  tabs: { display: "flex", gap: 8, flexWrap: "wrap", margin: "16px 0" },
-  tab: { padding: "8px 14px", border: "none", borderRadius: 6, cursor: "pointer", fontSize: 14 },
-  form: { marginBottom: 16 },
-  input: { display: "block", width: "100%", padding: 8, marginBottom: 8, boxSizing: "border-box", fontSize: 14 },
-  go: { padding: "10px 28px", background: "#16a34a", color: "#fff", border: "none", borderRadius: 6, cursor: "pointer", fontSize: 15 },
-  output: { background: "#0b0e14", color: "#d1d5db", padding: 16, borderRadius: 8, overflow: "auto", maxHeight: 520, fontSize: 13, lineHeight: 1.5 },
-};

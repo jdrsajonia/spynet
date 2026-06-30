@@ -3,6 +3,7 @@ from .frontend_detector import FrontendDetector
 from .backend_detector import BackendDetector
 from .cdn_detector import CDNDetector
 from .server_detector import ServerDetector
+from .analytics_detector import AnalyticsDetector
 from .base_detector import BaseDetector
 from core.signature_loader import SignatureLoader
 
@@ -24,10 +25,11 @@ class DetectorFactory:
     """
 
     _registry = {
-        "frontend": FrontendDetector,
-        "backend":  BackendDetector,
-        "cdn":      CDNDetector,
-        "server":   ServerDetector,
+        "frontend":  FrontendDetector,
+        "backend":   BackendDetector,
+        "cdn":       CDNDetector,
+        "server":    ServerDetector,
+        "analytics": AnalyticsDetector,
     }
 
     def __init__(self):

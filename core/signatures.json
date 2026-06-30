@@ -456,6 +456,176 @@
                 "resource_patterns": 35
             },
             "threshold": 40
+        },
+        "Bootstrap": {
+            "html_patterns": ["data-bs-toggle", "navbar-toggler", "data-bs-target"],
+            "script_patterns": ["bootstrap.min.js", "bootstrap.bundle.min.js", "/bootstrap@"],
+            "header_patterns": [], "cookie_patterns": [],
+            "js_patterns": ["bootstrap.modal", "data-bs-", "bootstrap.tooltip"],
+            "resource_patterns": ["bootstrap.min.css", "/bootstrap@"],
+            "probe_paths": {},
+            "weights": {"html_patterns": 25, "script_patterns": 40, "header_patterns": 0, "cookie_patterns": 0, "js_patterns": 30, "resource_patterns": 35},
+            "threshold": 40
+        },
+        "htmx": {
+            "html_patterns": ["hx-get", "hx-post", "hx-trigger", "hx-swap", "hx-target"],
+            "script_patterns": ["htmx.min.js", "htmx.org", "/htmx@"],
+            "header_patterns": [], "cookie_patterns": [],
+            "js_patterns": ["htmx.process", "htmx.ajax"],
+            "resource_patterns": ["htmx"],
+            "probe_paths": {},
+            "weights": {"html_patterns": 40, "script_patterns": 40, "header_patterns": 0, "cookie_patterns": 0, "js_patterns": 35, "resource_patterns": 25},
+            "threshold": 40
+        },
+        "Stimulus": {
+            "html_patterns": ["data-controller=", "data-action=", "data-target="],
+            "script_patterns": ["@hotwired/stimulus", "stimulus.js"],
+            "header_patterns": [], "cookie_patterns": [],
+            "js_patterns": ["stimulus.application", "@hotwired/stimulus"],
+            "resource_patterns": [],
+            "probe_paths": {},
+            "weights": {"html_patterns": 35, "script_patterns": 45, "header_patterns": 0, "cookie_patterns": 0, "js_patterns": 45, "resource_patterns": 0},
+            "threshold": 45
+        },
+        "Preact": {
+            "html_patterns": [],
+            "script_patterns": ["preact.min.js", "/preact@", "preact/compat"],
+            "header_patterns": [], "cookie_patterns": [],
+            "js_patterns": ["__preactattradapter", "preact.options", "preact.render", "preact.h("],
+            "resource_patterns": ["/preact@"],
+            "probe_paths": {},
+            "weights": {"html_patterns": 0, "script_patterns": 45, "header_patterns": 0, "cookie_patterns": 0, "js_patterns": 45, "resource_patterns": 35},
+            "threshold": 45
+        },
+        "Solid.js": {
+            "html_patterns": ["data-hk="],
+            "script_patterns": ["solid-js", "/solid-js@"],
+            "header_patterns": [], "cookie_patterns": [],
+            "js_patterns": ["_$createcomponent", "_$insert", "solid-js/web", "_$template"],
+            "resource_patterns": [],
+            "probe_paths": {},
+            "weights": {"html_patterns": 20, "script_patterns": 45, "header_patterns": 0, "cookie_patterns": 0, "js_patterns": 45, "resource_patterns": 0},
+            "threshold": 45
+        },
+        "Lit": {
+            "html_patterns": [],
+            "script_patterns": ["lit-element", "lit-html", "/lit@", "/lit-element@"],
+            "header_patterns": [], "cookie_patterns": [],
+            "js_patterns": ["litelement", "lit-html", "_$litelement$", "customelement("],
+            "resource_patterns": ["/lit@"],
+            "probe_paths": {},
+            "weights": {"html_patterns": 0, "script_patterns": 50, "header_patterns": 0, "cookie_patterns": 0, "js_patterns": 45, "resource_patterns": 30},
+            "threshold": 50
+        },
+        "Qwik": {
+            "html_patterns": ["q:container", "q:version", "q:base", "q:render"],
+            "script_patterns": ["qwikloader", "/build/q-"],
+            "header_patterns": [], "cookie_patterns": [],
+            "js_patterns": ["qwikloader", "qwik/core"],
+            "resource_patterns": [],
+            "probe_paths": {},
+            "weights": {"html_patterns": 45, "script_patterns": 45, "header_patterns": 0, "cookie_patterns": 0, "js_patterns": 40, "resource_patterns": 0},
+            "threshold": 45
+        },
+        "Backbone.js": {
+            "html_patterns": [],
+            "script_patterns": ["backbone.min.js", "backbone-min.js", "/backbone@"],
+            "header_patterns": [], "cookie_patterns": [],
+            "js_patterns": ["backbone.model", "backbone.view", "backbone.collection", "backbone.router"],
+            "resource_patterns": ["backbone.min.js"],
+            "probe_paths": {},
+            "weights": {"html_patterns": 0, "script_patterns": 45, "header_patterns": 0, "cookie_patterns": 0, "js_patterns": 45, "resource_patterns": 35},
+            "threshold": 45
+        },
+        "Knockout": {
+            "html_patterns": ["data-bind="],
+            "script_patterns": ["knockout.min.js", "knockout-3", "/knockout@"],
+            "header_patterns": [], "cookie_patterns": [],
+            "js_patterns": ["ko.applybindings", "ko.observable", "ko.computed"],
+            "resource_patterns": [],
+            "probe_paths": {},
+            "weights": {"html_patterns": 30, "script_patterns": 45, "header_patterns": 0, "cookie_patterns": 0, "js_patterns": 45, "resource_patterns": 0},
+            "threshold": 40
+        },
+        "Material UI": {
+            "html_patterns": ["muibuttonbase-root", "muitypography", "muipaper-root"],
+            "script_patterns": ["@mui/material", "material-ui"],
+            "header_patterns": [], "cookie_patterns": [],
+            "js_patterns": ["@mui/material", "makestyles", "createtheme"],
+            "resource_patterns": [],
+            "probe_paths": {},
+            "weights": {"html_patterns": 40, "script_patterns": 40, "header_patterns": 0, "cookie_patterns": 0, "js_patterns": 35, "resource_patterns": 0},
+            "threshold": 45
+        },
+        "D3.js": {
+            "html_patterns": [],
+            "script_patterns": ["d3.min.js", "d3.v7", "d3.v6", "d3.v5", "/d3@"],
+            "header_patterns": [], "cookie_patterns": [],
+            "js_patterns": ["d3.select(", "d3.scalelinear", "d3.axisbottom", "d3.geopath"],
+            "resource_patterns": [],
+            "probe_paths": {},
+            "weights": {"html_patterns": 0, "script_patterns": 45, "header_patterns": 0, "cookie_patterns": 0, "js_patterns": 45, "resource_patterns": 0},
+            "threshold": 45
+        },
+        "Three.js": {
+            "html_patterns": [],
+            "script_patterns": ["three.min.js", "three.module.js", "/three@"],
+            "header_patterns": [], "cookie_patterns": [],
+            "js_patterns": ["three.webglrenderer", "three.perspectivecamera", "new three."],
+            "resource_patterns": [],
+            "probe_paths": {},
+            "weights": {"html_patterns": 0, "script_patterns": 50, "header_patterns": 0, "cookie_patterns": 0, "js_patterns": 45, "resource_patterns": 0},
+            "threshold": 45
+        },
+        "Chart.js": {
+            "html_patterns": [],
+            "script_patterns": ["chart.min.js", "chart.umd.js", "/chart.js@"],
+            "header_patterns": [], "cookie_patterns": [],
+            "js_patterns": ["new chart(", "chart.register", "chart.defaults"],
+            "resource_patterns": [],
+            "probe_paths": {},
+            "weights": {"html_patterns": 0, "script_patterns": 45, "header_patterns": 0, "cookie_patterns": 0, "js_patterns": 45, "resource_patterns": 0},
+            "threshold": 45
+        },
+        "GSAP": {
+            "html_patterns": [],
+            "script_patterns": ["gsap.min.js", "tweenmax.min.js", "/gsap@", "gsap/dist"],
+            "header_patterns": [], "cookie_patterns": [],
+            "js_patterns": ["gsap.to(", "gsap.timeline", "gsap.from(", "tweenmax."],
+            "resource_patterns": [],
+            "probe_paths": {},
+            "weights": {"html_patterns": 0, "script_patterns": 50, "header_patterns": 0, "cookie_patterns": 0, "js_patterns": 45, "resource_patterns": 0},
+            "threshold": 45
+        },
+        "Foundation": {
+            "html_patterns": ["data-reveal", "class=\"top-bar"],
+            "script_patterns": ["foundation.min.js", "/foundation-sites@"],
+            "header_patterns": [], "cookie_patterns": [],
+            "js_patterns": ["foundation.reveal", "foundation("],
+            "resource_patterns": ["foundation.min.css"],
+            "probe_paths": {},
+            "weights": {"html_patterns": 25, "script_patterns": 40, "header_patterns": 0, "cookie_patterns": 0, "js_patterns": 35, "resource_patterns": 35},
+            "threshold": 45
+        },
+        "Bulma": {
+            "html_patterns": ["navbar-burger", "class=\"hero is-"],
+            "script_patterns": [],
+            "header_patterns": [], "cookie_patterns": [],
+            "js_patterns": [],
+            "resource_patterns": ["bulma.min.css", "/bulma@"],
+            "probe_paths": {},
+            "weights": {"html_patterns": 25, "script_patterns": 0, "header_patterns": 0, "cookie_patterns": 0, "js_patterns": 0, "resource_patterns": 45},
+            "threshold": 45
+        },
+        "Materialize": {
+            "html_patterns": [],
+            "script_patterns": ["materialize.min.js", "/materialize@"],
+            "header_patterns": [], "cookie_patterns": [],
+            "js_patterns": ["m.autoinit", "materialize"],
+            "resource_patterns": ["materialize.min.css"],
+            "probe_paths": {},
+            "weights": {"html_patterns": 0, "script_patterns": 45, "header_patterns": 0, "cookie_patterns": 0, "js_patterns": 35, "resource_patterns": 40},
+            "threshold": 45
         }
     },
     "backend": {
@@ -904,6 +1074,149 @@
                 "resource_patterns": 20
             },
             "threshold": 50
+        },
+        "Drupal": {
+            "html_patterns": ["drupal.settings", "/sites/all/", "/sites/default/files", "data-drupal"],
+            "script_patterns": [],
+            "header_patterns": ["x-drupal-cache", "x-generator: drupal", "x-drupal-dynamic-cache"],
+            "cookie_patterns": [],
+            "js_patterns": ["drupal.behaviors", "drupal.settings", "jquery.once"],
+            "resource_patterns": ["/sites/default/", "/core/misc/drupal"],
+            "probe_paths": {"/CHANGELOG.txt": ["drupal"]},
+            "weights": {"html_patterns": 35, "script_patterns": 0, "header_patterns": 50, "cookie_patterns": 0, "js_patterns": 35, "resource_patterns": 30},
+            "threshold": 40
+        },
+        "Joomla": {
+            "html_patterns": ["/media/jui/", "com_content", "joomla-script-options"],
+            "script_patterns": [],
+            "header_patterns": [],
+            "cookie_patterns": [],
+            "js_patterns": ["joomla.submitform", "window.joomla"],
+            "resource_patterns": ["/media/system/js/", "/media/jui/"],
+            "probe_paths": {"/administrator/": ["joomla"]},
+            "weights": {"html_patterns": 35, "script_patterns": 0, "header_patterns": 0, "cookie_patterns": 0, "js_patterns": 35, "resource_patterns": 35},
+            "threshold": 40
+        },
+        "Magento": {
+            "html_patterns": ["data-mage-init", "magento_", "mage-translation", "mage/cookies"],
+            "script_patterns": [],
+            "header_patterns": ["x-magento-cache-debug"],
+            "cookie_patterns": ["x-magento-vary"],
+            "js_patterns": ["mage.cookies", "magento", "mage/requirejs"],
+            "resource_patterns": ["/static/version", "/mage/"],
+            "probe_paths": {},
+            "weights": {"html_patterns": 35, "script_patterns": 0, "header_patterns": 40, "cookie_patterns": 30, "js_patterns": 30, "resource_patterns": 30},
+            "threshold": 40
+        },
+        "Shopify": {
+            "html_patterns": ["cdn.shopify.com", "shopify.theme", "shopify.shop"],
+            "script_patterns": ["shopify"],
+            "header_patterns": ["x-shopify-stage", "x-sorting-hat-shopid", "x-shopid"],
+            "cookie_patterns": ["_shopify_", "cart_sig"],
+            "js_patterns": ["window.shopify", "shopifyanalytics", "shopify.theme"],
+            "resource_patterns": ["cdn.shopify.com"],
+            "probe_paths": {},
+            "weights": {"html_patterns": 35, "script_patterns": 30, "header_patterns": 50, "cookie_patterns": 30, "js_patterns": 35, "resource_patterns": 35},
+            "threshold": 40
+        },
+        "Wix": {
+            "html_patterns": ["_wixcssstates", "wix-warmup-data", "wix.com"],
+            "script_patterns": [],
+            "header_patterns": ["x-wix-request-id", "x-wix-renderer-server"],
+            "cookie_patterns": [],
+            "js_patterns": ["wixbisession", "wixperformancemeasurements", "window.wixembedsapi"],
+            "resource_patterns": ["static.wixstatic.com"],
+            "probe_paths": {},
+            "weights": {"html_patterns": 30, "script_patterns": 0, "header_patterns": 55, "cookie_patterns": 0, "js_patterns": 35, "resource_patterns": 35},
+            "threshold": 40
+        },
+        "Squarespace": {
+            "html_patterns": ["static1.squarespace.com", "squarespace_context", "squarespace.com"],
+            "script_patterns": [],
+            "header_patterns": ["x-contextid"],
+            "cookie_patterns": [],
+            "js_patterns": ["static.squarespace_context", "squarespace."],
+            "resource_patterns": ["static1.squarespace.com"],
+            "probe_paths": {},
+            "weights": {"html_patterns": 35, "script_patterns": 0, "header_patterns": 30, "cookie_patterns": 0, "js_patterns": 35, "resource_patterns": 40},
+            "threshold": 40
+        },
+        "Ghost": {
+            "html_patterns": ["content=\"ghost", "ghost-search", "/ghost/api"],
+            "script_patterns": [],
+            "header_patterns": [],
+            "cookie_patterns": [],
+            "js_patterns": ["@tryghost", "ghost.init"],
+            "resource_patterns": ["/assets/built/", "/ghost/"],
+            "probe_paths": {"/ghost/": ["ghost"]},
+            "weights": {"html_patterns": 40, "script_patterns": 0, "header_patterns": 0, "cookie_patterns": 0, "js_patterns": 30, "resource_patterns": 30},
+            "threshold": 40
+        },
+        "TYPO3": {
+            "html_patterns": ["/typo3conf/", "/typo3temp/", "typo3"],
+            "script_patterns": [],
+            "header_patterns": [],
+            "cookie_patterns": [],
+            "js_patterns": ["typo3"],
+            "resource_patterns": ["/typo3conf/", "/typo3temp/"],
+            "probe_paths": {},
+            "weights": {"html_patterns": 35, "script_patterns": 0, "header_patterns": 0, "cookie_patterns": 0, "js_patterns": 30, "resource_patterns": 40},
+            "threshold": 40
+        },
+        "Phoenix": {
+            "html_patterns": ["data-phx-", "phx-socket", "phx-main"],
+            "script_patterns": [],
+            "header_patterns": [],
+            "cookie_patterns": [],
+            "js_patterns": ["livesocket", "phoenix.js", "phx-"],
+            "resource_patterns": ["phoenix.js"],
+            "probe_paths": {},
+            "weights": {"html_patterns": 40, "script_patterns": 0, "header_patterns": 0, "cookie_patterns": 0, "js_patterns": 40, "resource_patterns": 30},
+            "threshold": 45
+        },
+        "Adobe Experience Manager": {
+            "html_patterns": ["/etc.clientlibs/", "/etc/clientlibs/", "/content/dam/"],
+            "script_patterns": [],
+            "header_patterns": [],
+            "cookie_patterns": [],
+            "js_patterns": ["granite.", "cq.wcm"],
+            "resource_patterns": ["/etc.clientlibs/", "/etc/designs/"],
+            "probe_paths": {},
+            "weights": {"html_patterns": 40, "script_patterns": 0, "header_patterns": 0, "cookie_patterns": 0, "js_patterns": 30, "resource_patterns": 35},
+            "threshold": 45
+        },
+        "CodeIgniter": {
+            "html_patterns": [],
+            "script_patterns": [],
+            "header_patterns": [],
+            "cookie_patterns": ["ci_session", "ci_csrf_token"],
+            "js_patterns": [],
+            "resource_patterns": [],
+            "probe_paths": {},
+            "weights": {"html_patterns": 0, "script_patterns": 0, "header_patterns": 0, "cookie_patterns": 50, "js_patterns": 0, "resource_patterns": 0},
+            "threshold": 50
+        },
+        "Strapi": {
+            "html_patterns": [],
+            "script_patterns": [],
+            "header_patterns": ["x-powered-by: strapi"],
+            "cookie_patterns": [],
+            "js_patterns": [],
+            "resource_patterns": [],
+            "probe_paths": {},
+            "weights": {"html_patterns": 0, "script_patterns": 0, "header_patterns": 60, "cookie_patterns": 0, "js_patterns": 0, "resource_patterns": 0},
+            "threshold": 50
+        },
+        "ColdFusion": {
+            "html_patterns": [],
+            "script_patterns": [],
+            "header_patterns": [],
+            "cookie_patterns": ["cfid", "cftoken"],
+            "js_patterns": [],
+            "resource_patterns": [".cfm", ".cfc"],
+            "probe_paths": {},
+            "weights": {"html_patterns": 0, "script_patterns": 0, "header_patterns": 0, "cookie_patterns": 45, "js_patterns": 0, "resource_patterns": 25},
+            "threshold": 45
         }
     },
     "cdn": {
@@ -1153,6 +1466,55 @@
                 "ip_ranges": 40
             },
             "threshold": 50
+        },
+        "Amazon CloudFront": {
+            "header_patterns": ["x-amz-cf-id", "x-amz-cf-pop", "via: cloudfront"],
+            "ns_patterns": ["cloudfront.net"],
+            "ip_ranges": [],
+            "weights": {"header_patterns": 60, "ns_patterns": 60, "ip_ranges": 0},
+            "threshold": 50
+        },
+        "Google Cloud": {
+            "header_patterns": ["server: gws", "server: google frontend", "via: 1.1 google", "x-goog-"],
+            "ns_patterns": ["googledomains.com"],
+            "ip_ranges": [],
+            "weights": {"header_patterns": 60, "ns_patterns": 50, "ip_ranges": 0},
+            "threshold": 50
+        },
+        "Imperva Incapsula": {
+            "header_patterns": ["x-iinfo", "x-cdn: incapsula"],
+            "ns_patterns": ["incapdns.net"],
+            "ip_ranges": [],
+            "weights": {"header_patterns": 60, "ns_patterns": 60, "ip_ranges": 0},
+            "threshold": 50
+        },
+        "Sucuri": {
+            "header_patterns": ["x-sucuri-id", "x-sucuri-cache", "server: sucuri"],
+            "ns_patterns": [],
+            "ip_ranges": [],
+            "weights": {"header_patterns": 60, "ns_patterns": 0, "ip_ranges": 0},
+            "threshold": 50
+        },
+        "StackPath": {
+            "header_patterns": ["server: stackpath"],
+            "ns_patterns": ["stackpathdns.com"],
+            "ip_ranges": [],
+            "weights": {"header_patterns": 55, "ns_patterns": 60, "ip_ranges": 0},
+            "threshold": 50
+        },
+        "BunnyCDN": {
+            "header_patterns": ["server: bunnycdn", "cdn-pullzone", "cdn-requestcountrycode"],
+            "ns_patterns": ["bunny.net"],
+            "ip_ranges": [],
+            "weights": {"header_patterns": 60, "ns_patterns": 55, "ip_ranges": 0},
+            "threshold": 50
+        },
+        "KeyCDN": {
+            "header_patterns": ["server: keycdn-engine", "x-edge-location"],
+            "ns_patterns": [],
+            "ip_ranges": [],
+            "weights": {"header_patterns": 60, "ns_patterns": 0, "ip_ranges": 0},
+            "threshold": 50
         }
     },
     "server": {
@@ -1220,6 +1582,207 @@
                 "html_patterns": 0
             },
             "threshold": 50
+        },
+        "Envoy": {
+            "header_patterns": [
+                "x-envoy-upstream-service-time",
+                "x-envoy-decorator-operation",
+                "server: envoy"
+            ],
+            "html_patterns": [],
+            "weights": {
+                "header_patterns": 55,
+                "html_patterns": 0
+            },
+            "threshold": 50
+        },
+        "Gunicorn": {
+            "header_patterns": ["server: gunicorn"], "html_patterns": [],
+            "weights": {"header_patterns": 60, "html_patterns": 0}, "threshold": 50
+        },
+        "Uvicorn": {
+            "header_patterns": ["server: uvicorn"], "html_patterns": [],
+            "weights": {"header_patterns": 60, "html_patterns": 0}, "threshold": 50
+        },
+        "uWSGI": {
+            "header_patterns": ["server: uwsgi"], "html_patterns": [],
+            "weights": {"header_patterns": 60, "html_patterns": 0}, "threshold": 50
+        },
+        "Kestrel": {
+            "header_patterns": ["server: kestrel"], "html_patterns": [],
+            "weights": {"header_patterns": 60, "html_patterns": 0}, "threshold": 50
+        },
+        "Phusion Passenger": {
+            "header_patterns": ["server: phusion passenger", "x-powered-by: phusion passenger"], "html_patterns": [],
+            "weights": {"header_patterns": 60, "html_patterns": 0}, "threshold": 50
+        },
+        "Varnish": {
+            "header_patterns": ["x-varnish", "via: varnish", "server: varnish"], "html_patterns": [],
+            "weights": {"header_patterns": 55, "html_patterns": 0}, "threshold": 50
+        },
+        "Tengine": {
+            "header_patterns": ["server: tengine"], "html_patterns": [],
+            "weights": {"header_patterns": 60, "html_patterns": 0}, "threshold": 50
+        },
+        "Jetty": {
+            "header_patterns": ["server: jetty"], "html_patterns": [],
+            "weights": {"header_patterns": 60, "html_patterns": 0}, "threshold": 50
+        }
+    },
+    "analytics": {
+        "Google Analytics": {
+            "html_patterns": [],
+            "script_patterns": [
+                "google-analytics.com/analytics.js",
+                "googletagmanager.com/gtag/js",
+                "google-analytics.com/ga.js"
+            ],
+            "cookie_patterns": ["_ga", "_gid", "_gat"],
+            "js_patterns": [
+                "ga('create'",
+                "gtag('config'",
+                "gtag('js'",
+                "_gaq.push",
+                "google_tag_manager"
+            ],
+            "resource_patterns": ["google-analytics.com"],
+            "weights": {
+                "html_patterns": 0, "script_patterns": 50,
+                "cookie_patterns": 30, "js_patterns": 40, "resource_patterns": 30
+            },
+            "threshold": 40
+        },
+        "Google Tag Manager": {
+            "html_patterns": ["googletagmanager.com/ns.html"],
+            "script_patterns": ["googletagmanager.com/gtm.js"],
+            "cookie_patterns": [],
+            "js_patterns": ["gtm.start", "datalayer.push", "'gtm.js'"],
+            "resource_patterns": ["googletagmanager.com"],
+            "weights": {
+                "html_patterns": 35, "script_patterns": 55,
+                "cookie_patterns": 0, "js_patterns": 40, "resource_patterns": 30
+            },
+            "threshold": 40
+        },
+        "Facebook Pixel": {
+            "html_patterns": [],
+            "script_patterns": ["connect.facebook.net", "fbevents.js"],
+            "cookie_patterns": ["_fbp", "_fbc"],
+            "js_patterns": ["fbq('init'", "fbq('track'", "fbq=function", "_fbq"],
+            "resource_patterns": ["connect.facebook.net"],
+            "weights": {
+                "html_patterns": 0, "script_patterns": 50,
+                "cookie_patterns": 30, "js_patterns": 40, "resource_patterns": 30
+            },
+            "threshold": 40
+        },
+        "Hotjar": {
+            "html_patterns": [],
+            "script_patterns": ["static.hotjar.com", "hotjar.com/c/hotjar"],
+            "cookie_patterns": ["_hjid", "_hjsession"],
+            "js_patterns": ["_hjsettings", "window.hj", "hjid:", "hotjar"],
+            "resource_patterns": ["static.hotjar.com"],
+            "weights": {
+                "html_patterns": 0, "script_patterns": 50,
+                "cookie_patterns": 30, "js_patterns": 40, "resource_patterns": 30
+            },
+            "threshold": 40
+        },
+        "Segment": {
+            "html_patterns": [],
+            "script_patterns": ["cdn.segment.com/analytics.js", "cdn.segment.io"],
+            "cookie_patterns": ["ajs_anonymous_id", "ajs_user_id"],
+            "js_patterns": ["analytics.load(", "analytics.track(", "analytics.identify("],
+            "resource_patterns": ["cdn.segment.com"],
+            "weights": {
+                "html_patterns": 0, "script_patterns": 55,
+                "cookie_patterns": 35, "js_patterns": 35, "resource_patterns": 30
+            },
+            "threshold": 45
+        },
+        "Mixpanel": {
+            "html_patterns": [],
+            "script_patterns": ["cdn.mxpnl.com", "cdn4.mxpnl.com"],
+            "cookie_patterns": ["mp_"],
+            "js_patterns": ["mixpanel.init", "mixpanel.track", "mixpanel.people"],
+            "resource_patterns": ["cdn.mxpnl.com"],
+            "weights": {
+                "html_patterns": 0, "script_patterns": 50,
+                "cookie_patterns": 30, "js_patterns": 45, "resource_patterns": 30
+            },
+            "threshold": 40
+        },
+        "Amplitude": {
+            "html_patterns": [],
+            "script_patterns": ["cdn.amplitude.com", "amplitude.com/libs"],
+            "cookie_patterns": ["amplitude_"],
+            "js_patterns": ["amplitude.getinstance", "amplitude.init", "amplitude.logevent"],
+            "resource_patterns": ["cdn.amplitude.com"],
+            "weights": {
+                "html_patterns": 0, "script_patterns": 50,
+                "cookie_patterns": 30, "js_patterns": 45, "resource_patterns": 30
+            },
+            "threshold": 40
+        },
+        "Matomo": {
+            "html_patterns": [],
+            "script_patterns": ["matomo.js", "piwik.js"],
+            "cookie_patterns": ["_pk_id", "_pk_ses"],
+            "js_patterns": ["_paq.push", "matomo.org", "piwik"],
+            "resource_patterns": ["/matomo/"],
+            "weights": {
+                "html_patterns": 0, "script_patterns": 45,
+                "cookie_patterns": 35, "js_patterns": 35, "resource_patterns": 25
+            },
+            "threshold": 40
+        },
+        "Plausible": {
+            "html_patterns": ["data-domain="],
+            "script_patterns": ["plausible.io/js"],
+            "cookie_patterns": [],
+            "js_patterns": ["plausible("],
+            "resource_patterns": ["plausible.io"],
+            "weights": {
+                "html_patterns": 0, "script_patterns": 60,
+                "cookie_patterns": 0, "js_patterns": 30, "resource_patterns": 30
+            },
+            "threshold": 50
+        },
+        "HubSpot": {
+            "html_patterns": [],
+            "script_patterns": ["js.hs-scripts.com", "js.hsforms.net", "js.hs-analytics.net"],
+            "cookie_patterns": ["hubspotutk", "__hstc", "__hssc"],
+            "js_patterns": ["_hsq.push", "hbspt."],
+            "resource_patterns": ["hs-scripts.com"],
+            "weights": {
+                "html_patterns": 0, "script_patterns": 50,
+                "cookie_patterns": 30, "js_patterns": 40, "resource_patterns": 30
+            },
+            "threshold": 40
+        },
+        "Intercom": {
+            "html_patterns": [],
+            "script_patterns": ["widget.intercom.io", "js.intercomcdn.com"],
+            "cookie_patterns": ["intercom-"],
+            "js_patterns": ["intercomsettings", "window.intercom"],
+            "resource_patterns": ["intercomcdn.com"],
+            "weights": {
+                "html_patterns": 0, "script_patterns": 50,
+                "cookie_patterns": 30, "js_patterns": 40, "resource_patterns": 30
+            },
+            "threshold": 40
+        },
+        "LinkedIn Insight": {
+            "html_patterns": [],
+            "script_patterns": ["snap.licdn.com"],
+            "cookie_patterns": [],
+            "js_patterns": ["_linkedin_data_partner_id", "_linkedin_partner_id"],
+            "resource_patterns": ["snap.licdn.com"],
+            "weights": {
+                "html_patterns": 0, "script_patterns": 55,
+                "cookie_patterns": 0, "js_patterns": 45, "resource_patterns": 30
+            },
+            "threshold": 45
         }
     }
 }

@@ -158,7 +158,7 @@ class WaybackSnapshot(models.Model):
 class Technology(models.Model):
     CATEGORY_CHOICES = [
         ("frontend", "frontend"), ("backend", "backend"),
-        ("cdn", "cdn"), ("server", "server"),
+        ("cdn", "cdn"), ("server", "server"), ("analytics", "analytics"),
     ]
     # Exactamente uno de estos dos padres está set (ver CheckConstraint).
     analysis    = models.ForeignKey(Analysis, related_name="technologies", null=True, blank=True, on_delete=models.CASCADE)

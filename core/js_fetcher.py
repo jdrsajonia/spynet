@@ -1,6 +1,7 @@
 import logging
 import requests
 from urllib.parse import urljoin
+from whois import extract_domain
 
 from config.constants import DEFAULT_HEADERS, JS_FETCH_TIMEOUT, MAX_JS_FILES, MAX_JS_SIZE
 
@@ -40,7 +41,7 @@ def fetch_js_contents(base_url: str, script_srcs: list[str], session=None) -> li
         return []
 
     http = session or requests
-    candidates = _prioritize(script_srcs)
+    candidates = _prioritize(script_srcs, base_url)
     logger.debug("JS fetcher: %d candidates after prioritization (from %d srcs)", len(candidates), len(script_srcs))
     contents   = []
 
@@ -56,11 +57,22 @@ def fetch_js_contents(base_url: str, script_srcs: list[str], session=None) -> li
     return contents
 
 
-def _prioritize(srcs: list[str]) -> list[str]:
+def _prioritize(srcs: list[str], base_url: str = "") -> list[str]:
     """
     Ordena los scripts: primero los que tienen keywords de app, luego el resto.
-    Descarta los que tienen keywords de terceros.
+
+    Reglas de descarte:
+      - keywords de terceros (analytics, ads…) → fuera.
+      - URL absoluta de OTRO dominio → fuera, salvo que sea una lib de framework
+        (ej. cdn.jsdelivr.net/vue@3). Las URLs absolutas del MISMO dominio (los
+        bundles propios del sitio, ej. https://www.sitio.com/static/main-abc.js)
+        SÍ se descargan: son la mejor fuente para detectar el stack.
     """
+    try:
+        base_domain = extract_domain(base_url) if base_url else ""
+    except Exception:
+        base_domain = ""
+
     priority = []
     rest     = []
 
@@ -69,8 +81,14 @@ def _prioritize(srcs: list[str]) -> list[str]:
 
         if any(skip in src_lower for skip in SKIP_KEYWORDS):
             continue
-        if src_lower.startswith(("http://", "https://")) and not _is_same_origin_hint(src_lower):
-            continue  # CDN externo de terceros — poco útil para detectar el stack
+
+        if src_lower.startswith(("http://", "https://")):
+            try:
+                same_site = bool(base_domain) and extract_domain(src) == base_domain
+            except Exception:
+                same_site = False
+            if not same_site and not _is_same_origin_hint(src_lower):
+                continue  # tercero sin pista de framework → poco útil
 
         if any(kw in src_lower for kw in PRIORITY_KEYWORDS):
             priority.append(src)

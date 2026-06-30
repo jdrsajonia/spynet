@@ -168,6 +168,13 @@ class Analyzer:  # patrón Facade
             "snapshots":     analysed,
         }
 
+    def wayback(self, url: str) -> dict | None:
+        """
+        Solo el servicio de Wayback. Lo expone aparte para la carga diferida:
+        el análisis principal responde sin Wayback y este se pide en segundo plano.
+        """
+        return self._wayback.fetch_service(self._normalize_url(url))
+
     # ──────────────────────────────────────────────────────────────────────
     # Helpers privados
     # ──────────────────────────────────────────────────────────────────────
@@ -215,6 +222,10 @@ class Analyzer:  # patrón Facade
         # ServerDetector: solo en vivo. En snapshots el header Server lo pone
         # web.archive.org, no el sitio original, así que ahí no aplica.
         results += detectors["server"].detect(html, headers, scripts)
+        results += detectors["analytics"].detect(
+            html, headers, scripts, cookies,
+            js_contents=js_contents, resources=resources,
+        )
 
         return self._deduplicate(results)
 

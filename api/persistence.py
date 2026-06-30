@@ -171,6 +171,15 @@ def _save_wayback(analysis, wayback):
     if not wayback:
         _log_error(analysis, "wayback", "Wayback lookup returned no data")
         return
+    persist_wayback(analysis, wayback)
+
+
+@transaction.atomic
+def persist_wayback(analysis: Analysis, wayback: dict) -> WaybackResult:
+    """
+    Adjunta el resultado de Wayback a un análisis existente (carga diferida).
+    Devuelve el WaybackResult creado para serializarlo en la respuesta.
+    """
     snapshots = wayback.get("snapshots", [])
     timestamps = sorted(s["timestamp"] for s in snapshots if s.get("timestamp"))
     result = WaybackResult.objects.create(
@@ -184,6 +193,7 @@ def _save_wayback(analysis, wayback):
         WaybackSnapshot(wayback_result=result, timestamp=s.get("timestamp", ""), url=s.get("url", ""))
         for s in snapshots
     ])
+    return result
 
 
 def _log_error(analysis, service, message):

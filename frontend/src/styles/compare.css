@@ -1,0 +1,53 @@
+/* Vista "Compare Websites". Reutiliza .card / .tech / .kv de analyse.css. */
+
+.cmp-form { display: flex; align-items: center; gap: 12px; margin-bottom: 26px; flex-wrap: wrap; }
+.cmp-input {
+  flex: 1;
+  min-width: 220px;
+  padding: 11px 14px;
+  background: var(--bg-1);
+  border: 1px solid var(--panel-border);
+  border-radius: 10px;
+  color: var(--text);
+  font: inherit;
+  font-size: 14px;
+  outline: none;
+}
+.cmp-input:focus { border-color: var(--blue); }
+.cmp-vs { color: var(--text-dim); font-size: 13px; }
+.cmp-btn {
+  padding: 11px 28px;
+  background: var(--red);
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+.cmp-btn:disabled { opacity: 0.55; cursor: default; }
+
+.cmp-summary { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--gap); margin-bottom: var(--gap); }
+.cmp-sites   { display: grid; grid-template-columns: 1fr 1fr; gap: var(--gap); margin-bottom: var(--gap); }
+.cmp-cols    { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--gap); margin-bottom: var(--gap); }
+@media (max-width: 880px) {
+  .cmp-summary, .cmp-cols, .cmp-sites { grid-template-columns: 1fr; }
+}
+
+/* dos badges de confianza (A / B) en las tecnologías en común */
+.tech__confs { display: flex; gap: 6px; }
+.cmp-legend { font-size: 11px; color: var(--text-dim); margin: -6px 0 10px; }
+
+/* differences overview */
+.diff { display: flex; flex-direction: column; }
+.diff__row {
+  display: grid;
+  grid-template-columns: 64px 1fr 64px;
+  align-items: center;
+  padding: 9px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+.diff__row:last-child { border-bottom: none; }
+.diff__cat { text-align: center; font-size: 13px; color: var(--text-muted); text-transform: capitalize; }
+.diff__a { text-align: left;  font-weight: 700; color: var(--blue); }
+.diff__b { text-align: right; font-weight: 700; color: var(--red); }

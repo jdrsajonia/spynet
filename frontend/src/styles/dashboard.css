@@ -1,0 +1,67 @@
+/* Vista Dashboard. Reutiliza .card y tokens; añade KPIs, tablas y charts. */
+
+.dash-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 22px; }
+.dash-head__title { display: flex; align-items: center; gap: 10px; margin: 0; font-size: 25px; font-weight: 700; }
+.dash-head__sub { margin: 6px 0 0; color: var(--text-dim); font-size: 13px; }
+.dash-chip { padding: 9px 14px; background: var(--bg-1); border: 1px solid var(--panel-border); border-radius: 10px; font-size: 13px; color: var(--text-muted); white-space: nowrap; }
+
+/* ── KPIs ───────────────────────────────────────────── */
+.dash-kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--gap); margin-bottom: var(--gap); }
+.kpi { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.kpi__label { color: var(--text-muted); font-size: 14px; }
+.kpi__num { font-size: 32px; font-weight: 700; margin-top: 6px; }
+.kpi__icon { width: 46px; height: 46px; flex: 0 0 46px; display: grid; place-items: center; border-radius: 12px; background: var(--blue-soft); color: var(--blue); }
+
+/* ── fila de tablas (Top Tech | Recently Analysed) ──── */
+.dash-tables { display: grid; grid-template-columns: 1fr 1.35fr; gap: var(--gap); margin-bottom: var(--gap); }
+
+.filter-tabs { display: flex; gap: 14px; border-bottom: 1px solid var(--panel-border); margin-bottom: 12px; }
+.filter-tabs button { padding: 8px 2px; background: none; border: none; color: var(--text-muted); font: inherit; font-size: 13px; cursor: pointer; border-bottom: 2px solid transparent; }
+.filter-tabs button.is-active { color: #fff; border-bottom-color: var(--blue); }
+
+.rank { display: grid; grid-template-columns: 18px 1fr 1.4fr auto; align-items: center; gap: 12px; padding: 9px 0; }
+.rank__pos { color: var(--text-dim); font-size: 13px; }
+.rank__name { font-size: 14px; }
+.rank__bar { height: 6px; background: rgba(255, 255, 255, 0.06); border-radius: 4px; overflow: hidden; }
+.rank__fill { height: 100%; background: var(--blue); border-radius: 4px; }
+.rank__count { color: var(--text-muted); font-size: 13px; min-width: 34px; text-align: right; }
+
+.rad { width: 100%; }
+.rad__row { display: grid; grid-template-columns: 1.4fr 1fr 1.3fr auto; align-items: center; gap: 12px; padding: 11px 0; border-top: 1px solid rgba(255, 255, 255, 0.04); font-size: 13.5px; }
+.rad__head { color: var(--text-muted); font-size: 12px; border-top: none; }
+.rad__domain { font-weight: 500; }
+.rad__techs, .rad__date { color: var(--text-muted); }
+
+/* ── fila de charts (Donut | Confidence | Activity) ─── */
+.dash-charts { display: grid; grid-template-columns: 1.2fr 1fr 2.2fr; gap: var(--gap); }
+@media (max-width: 1000px) {
+  .dash-kpis { grid-template-columns: repeat(2, 1fr); }
+  .dash-tables, .dash-charts { grid-template-columns: 1fr; }
+}
+
+.chart-center { display: flex; align-items: center; gap: 18px; }
+.donut, .ring { width: 160px; height: 160px; flex: 0 0 160px; }
+
+.donut__track { fill: none; stroke: rgba(255, 255, 255, 0.05); stroke-width: 22; }
+.donut__seg { fill: none; stroke-width: 22; }
+.donut__num { fill: var(--text); font-size: 30px; font-weight: 700; }
+.donut__lbl { fill: var(--text-dim); font-size: 11px; }
+
+.ring__track { fill: none; stroke: rgba(255, 255, 255, 0.06); stroke-width: 15; }
+.ring__fg { fill: none; stroke: var(--blue); stroke-width: 15; stroke-linecap: round; }
+.ring__num { fill: var(--text); font-size: 26px; font-weight: 700; }
+
+.legend { display: flex; flex-direction: column; gap: 9px; }
+.legend__item { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-muted); }
+.legend__dot { width: 9px; height: 9px; border-radius: 50%; flex: 0 0 9px; }
+.legend__val { color: var(--text); }
+
+.confidence { display: flex; flex-direction: column; align-items: center; }
+
+.linechart { width: 100%; height: 190px; display: block; }
+.linechart__area { fill: rgba(59, 130, 246, 0.13); stroke: none; }
+.linechart__line { fill: none; stroke: var(--blue); stroke-width: 2; vector-effect: non-scaling-stroke; }
+.linechart__dot { fill: var(--blue); }
+
+.activity-sub { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 14px; }
+.activity-sub .stat { text-align: left; }

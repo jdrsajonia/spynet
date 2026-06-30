@@ -46,9 +46,19 @@ def mock_analyzer(monkeypatch):
             ],
         }
 
+    def fake_wayback(url):
+        return {
+            "archive_pages": 5,
+            "snapshots": [
+                {"timestamp": "20200101000000", "url": "https://web.archive.org/web/20200101000000/https://example.com/"},
+                {"timestamp": "20210101000000", "url": "https://web.archive.org/web/20210101000000/https://example.com/"},
+            ],
+        }
+
     monkeypatch.setattr("api.views._analyzer.analyze", fake_analyze)
     monkeypatch.setattr("api.views._analyzer.analyze_snapshot", fake_snapshot)
     monkeypatch.setattr("api.views._analyzer.analyze_history", fake_history)
+    monkeypatch.setattr("api.views._analyzer.wayback", fake_wayback)
 
 
 def make_analysis(url="https://example.com", techs=None):
@@ -96,7 +106,8 @@ class TestAnalysesCreate:
         assert Domain.objects.filter(name="example.com").exists()
         assert analysis.technologies.count() == 2
         assert analysis.status == "partial"
-        assert set(analysis.errors.values_list("service", flat=True)) == {"whois", "geo", "wayback"}
+        # Wayback se excluye del análisis principal (carga diferida) → no es error.
+        assert set(analysis.errors.values_list("service", flat=True)) == {"whois", "geo"}
         assert analysis.dns_result.records.count() == 2
 
     def test_dns_mx_priority_is_parsed(self, client):
@@ -222,6 +233,38 @@ class TestDetail:
     def test_zero_id_is_not_found(self, client):
         resp = client.get("/api/v1/analyses/0/")
         assert resp.status_code == 404
+
+
+class TestWayback:
+    def _create(self, client):
+        r = client.post("/api/v1/analyses/", {"url": "https://example.com"}, format="json")
+        return r.json()["meta"]["analysis_id"]
+
+    def test_loads_and_attaches(self, client):
+        aid = self._create(client)
+        resp = client.post(f"/api/v1/analyses/{aid}/wayback/")
+        assert resp.status_code == 201
+        assert len(resp.json()["data"]["snapshots"]) == 2
+        assert Analysis.objects.get(pk=aid).wayback_result.snapshots.count() == 2
+
+    def test_idempotent_no_duplicates(self, client):
+        aid = self._create(client)
+        client.post(f"/api/v1/analyses/{aid}/wayback/")
+        resp = client.post(f"/api/v1/analyses/{aid}/wayback/")
+        assert resp.status_code == 200
+        assert Analysis.objects.get(pk=aid).wayback_result.snapshots.count() == 2
+
+    def test_empty_returns_null(self, client, monkeypatch):
+        aid = self._create(client)
+        monkeypatch.setattr("api.views._analyzer.wayback", lambda url: {"archive_pages": 0, "snapshots": []})
+        resp = client.post(f"/api/v1/analyses/{aid}/wayback/")
+        assert resp.status_code == 200
+        assert resp.json()["data"] is None
+
+    def test_unknown_analysis_is_not_found(self, client):
+        resp = client.post("/api/v1/analyses/999999/wayback/")
+        assert resp.status_code == 404
+        assert resp.json()["error"]["code"] == error_codes.NOT_FOUND
 
 
 class TestDomainHistory:

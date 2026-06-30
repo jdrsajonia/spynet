@@ -8,8 +8,8 @@ from rest_framework.views import APIView
 from whois import extract_domain
 
 from analyzer import Analyzer
-from api.models import Analysis, Domain, Technology
-from api.persistence import persist_analysis, persist_history, persist_snapshot
+from api.models import Analysis, Domain, Technology, WaybackResult
+from api.persistence import persist_analysis, persist_history, persist_snapshot, persist_wayback
 from api.serializers import (
     AnalysisInputSerializer,
     CompareQuerySerializer,
@@ -109,7 +109,9 @@ class AnalysisCreateView(APIView):
 
         url = serializer.validated_data["url"]
         started = time.monotonic()
-        result = _analyzer.analyze(url)
+        # Wayback se excluye aquí (es el cuello de botella) y se carga aparte,
+        # en segundo plano, vía POST /analyses/<id>/wayback/.
+        result = _analyzer.analyze(url, include_wayback=False)
         duration_ms = int((time.monotonic() - started) * 1000)
 
         analysis = persist_analysis(result, triggered_by="api", duration_ms=duration_ms)
@@ -226,6 +228,31 @@ class AnalysisDetailView(APIView):
         )
 
 
+class AnalysisWaybackView(APIView):
+    throttle_scope = "analyze"  # pega a web.archive.org
+
+    def post(self, request, pk):
+        try:
+            analysis = Analysis.objects.get(pk=pk)
+        except Analysis.DoesNotExist:
+            raise NotFound("Analysis not found.")
+
+        # Idempotente: si ya se cargó con éxito, devolverlo sin re-pegarle a Wayback.
+        existing = WaybackResult.objects.filter(analysis=analysis).first()
+        if existing and existing.snapshot_count > 0:
+            return success_response(data=existing.to_dict(), meta={"analysis_id": pk}, status_code=200)
+        if existing:
+            existing.delete()  # intento previo vacío → reintentar limpio
+
+        wayback = _analyzer.wayback(analysis.source_url)
+        if not wayback or not wayback.get("snapshots"):
+            # Vacío o falló: el frontend decide si reintentar.
+            return success_response(data=None, meta={"analysis_id": pk, "status": "empty"}, status_code=200)
+
+        result = persist_wayback(analysis, wayback)
+        return success_response(data=result.to_dict(), meta={"analysis_id": pk}, status_code=201)
+
+
 class AnalysisCompareView(APIView):
     def get_throttles(self):
         # El POST puede analizar en vivo (resolver-o-analizar) → throttle estricto.
@@ -294,9 +321,9 @@ class StatsView(APIView):
         avg_conf = Technology.objects.aggregate(v=Avg("confidence"))["v"]
 
         top = (
-            Technology.objects.values("name")
+            Technology.objects.values("name", "category")
             .annotate(count=Count("id"))
-            .order_by("-count", "name")[:10]
+            .order_by("-count", "name")[:20]
         )
         by_category = (
             Technology.objects.values("category")
@@ -318,7 +345,8 @@ class StatsView(APIView):
                 "avg_analysis_time_seconds": round(avg_ms / 1000, 2) if avg_ms else None,
                 "avg_confidence": round(avg_conf, 1) if avg_conf is not None else None,
                 "top_technologies": [
-                    {"name": row["name"], "count": row["count"]} for row in top
+                    {"name": row["name"], "category": row["category"], "count": row["count"]}
+                    for row in top
                 ],
                 "by_category": {row["category"]: row["count"] for row in by_category},
                 "activity": [
