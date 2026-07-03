@@ -56,8 +56,9 @@ class AnalyticsDetector(BaseDetector):
             score += s; evidence += e
 
             if score >= sig["threshold"] and evidence:
-                logger.info("Analytics detected: %s (score=%d, threshold=%d)", tech, score, sig["threshold"])
-                results.append(self._build_result(tech, "analytics", score, evidence))
+                version = self._extract_version(sig, [script_text, js_combined, html_lower])
+                logger.info("Analytics detected: %s (score=%d, threshold=%d, version=%s)", tech, score, sig["threshold"], version)
+                results.append(self._build_result(tech, "analytics", score, evidence, version))
 
         logger.debug("Analytics detection complete: %d found", len(results))
         return results

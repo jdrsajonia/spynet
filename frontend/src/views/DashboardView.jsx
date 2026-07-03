@@ -3,16 +3,10 @@ import Donut from "../components/charts/Donut";
 import Ring from "../components/charts/Ring";
 import LineChart from "../components/charts/LineChart";
 import { prettyDate } from "../utils/format";
+import { CATEGORIES } from "../utils/categories";
 
 // Vista Dashboard. Presentacional: recibe {data:{stats,recent}, loading, error}.
 // Todo lo que pinta sale de datos reales del backend (/stats/ + /analyses/).
-const CATEGORIES = [
-  { key: "frontend",  label: "Frontend",  color: "#3b82f6" },
-  { key: "backend",   label: "Backend",   color: "#ef4444" },
-  { key: "cdn",       label: "CDN",       color: "#a855f7" },
-  { key: "server",    label: "Server",    color: "#22c55e" },
-  { key: "analytics", label: "Analytics", color: "#f59e0b" },
-];
 
 export default function DashboardView({ data, loading, error }) {
   if (loading) return <div className="placeholder">Cargando dashboard…</div>;
@@ -95,20 +89,25 @@ function TopTechnologies({ items }) {
 function RecentlyAnalysed({ rows }) {
   return (
     <article className="card">
-      <h3 className="card__title"><span className="dot" /> Recently Analysed Domains</h3>
+      <h3 className="card__title">
+        <span className="dot" /> Recently Analysed Domains
+        <span className="rad__count">{rows.length}</span>
+      </h3>
       <div className="rad">
         <div className="rad__row rad__head">
           <span>Domain</span><span>Technologies</span><span>Date</span><span>Status</span>
         </div>
         {rows.length === 0 && <p className="muted">Aún no hay análisis.</p>}
-        {rows.map((a) => (
-          <div className="rad__row" key={a.id}>
-            <span className="rad__domain">{a.domain}</span>
-            <span className="rad__techs">{a.technologies_count} techs</span>
-            <span className="rad__date">{prettyDate(a.analyzed_at)}</span>
-            <span className={"badge " + (a.status === "completed" ? "badge--ok" : "badge--partial")}>{a.status}</span>
-          </div>
-        ))}
+        <div className="rad__body">
+          {rows.map((a) => (
+            <div className="rad__row" key={a.id}>
+              <span className="rad__domain">{a.domain}</span>
+              <span className="rad__techs">{a.technologies_count} techs</span>
+              <span className="rad__date">{prettyDate(a.analyzed_at)}</span>
+              <span className={"badge " + (a.status === "completed" ? "badge--ok" : "badge--partial")}>{a.status}</span>
+            </div>
+          ))}
+        </div>
       </div>
     </article>
   );

@@ -116,3 +116,91 @@ class TestFalsePositives:
             resources=[],
         )
         assert "Angular" not in names(res)
+
+
+# ── Extracción de versión (version_patterns) ──────────────────────────────────
+
+def _by_name(results, name):
+    return next(r for r in results if r["name"] == name)
+
+
+class TestVersionExtraction:
+    def test_nginx_version_from_server_header(self):
+        det = factory.create("server")
+        res = det.detect(html="", headers={"Server": "nginx/1.25.3"}, scripts=[])
+        assert _by_name(res, "Nginx")["version"] == "1.25.3"
+
+    def test_apache_version_from_server_header(self):
+        det = factory.create("server")
+        res = det.detect(html="", headers={"Server": "Apache/2.4.57 (Unix)"}, scripts=[])
+        assert _by_name(res, "Apache")["version"] == "2.4.57"
+
+    def test_jquery_version_from_script_src(self):
+        det = factory.create("frontend")
+        res = det.detect(html="", headers={}, scripts=["https://code.jquery.com/jquery-3.6.0.min.js"])
+        assert _by_name(res, "jQuery")["version"] == "3.6.0"
+
+    def test_php_version_from_powered_by_header(self):
+        det = factory.create("backend")
+        res = det.detect(
+            html="", headers={"X-Powered-By": "PHP/8.1.2"}, scripts=[], cookies={},
+        )
+        assert _by_name(res, "PHP")["version"] == "8.1.2"
+
+    def test_version_is_none_when_no_pattern_matches(self):
+        # React no tiene version_patterns → version debe ser None, no fallar.
+        det = factory.create("frontend")
+        res = det.detect(html="", headers={}, scripts=["/static/react-dom.production.min.js"])
+        assert _by_name(res, "React")["version"] is None
+
+
+# ── Relaciones implies (a nivel Analyzer) ─────────────────────────────────────
+
+class TestImplications:
+    def setup_method(self):
+        from analyzer import Analyzer
+        self.analyzer = Analyzer()
+
+    def test_wordpress_implies_php(self):
+        techs = [{"name": "WordPress", "category": "backend", "version": None,
+                  "confidence": 90, "evidence": "cookie 'wordpress_' presente"}]
+        out = self.analyzer._apply_implications(techs)
+        php = _by_name(out, "PHP")
+        assert php["category"] == "backend"
+        assert "implícito por WordPress" in php["evidence"]
+
+    def test_implied_tech_not_added_if_already_detected(self):
+        techs = [
+            {"name": "WordPress", "category": "backend", "version": None, "confidence": 90, "evidence": "x"},
+            {"name": "PHP", "category": "backend", "version": "8.1", "confidence": 80, "evidence": "real"},
+        ]
+        out = self.analyzer._apply_implications(techs)
+        phps = [t for t in out if t["name"] == "PHP"]
+        assert len(phps) == 1
+        assert phps[0]["version"] == "8.1"   # se conserva la detección real, no la inferida
+
+
+# ── Extracción de <script> inline ─────────────────────────────────────────────
+
+class TestInlineScripts:
+    def setup_method(self):
+        from analyzer import Analyzer
+        self.analyzer = Analyzer()
+
+    def test_inline_script_text_extracted(self):
+        from bs4 import BeautifulSoup
+        html = "<html><script>window.dataLayer=[];gtag('js',new Date());</script>" \
+               "<script src='/app.js'></script></html>"
+        soup = BeautifulSoup(html, "html.parser")
+        inline = self.analyzer._extract_inline_scripts(soup)
+        assert len(inline) == 1
+        assert "datalayer" in inline[0].lower()
+
+    def test_inline_gtm_reaches_analytics_detector(self):
+        det = factory.create("analytics")
+        res = det.detect(
+            html="", headers={}, scripts=[], cookies={},
+            js_contents=["(function(){window.dataLayer=window.dataLayer||[];" \
+                         "dataLayer.push({'gtm.start':Date.now()});})();"],
+        )
+        assert "Google Tag Manager" in names(res)

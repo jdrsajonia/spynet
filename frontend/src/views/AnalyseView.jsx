@@ -1,12 +1,14 @@
+import { useState } from "react";
 import MapEmbed from "../components/MapEmbed";
 import Scanning from "../components/Scanning";
 import { confClass, yearOf, prettyDate, avgConfidence, seconds, snapshotThumbUrl } from "../utils/format";
+import { categoryColor } from "../utils/categories";
 
 // Vista "Analysis Results" (primer mockup). Componente presentacional: recibe
 // {data, loading, error} y pinta los paneles. Cero estilos inline — todo en
 // analyse.css. Se omiten Security Grade, Risk Level y el panel de IA (datos que
 // el backend no produce hoy).
-export default function AnalyseView({ data, loading, error, wayback, onRetryWayback }) {
+export default function AnalyseView({ data, loading, error, wayback, onRetryWayback, onViewHistorical }) {
   if (loading) return <Scanning />;
   if (error) return <div className="error">{error}</div>;
   if (!data) return <div className="placeholder">Escribe una URL arriba y presiona Enter para analizar.</div>;
@@ -34,7 +36,7 @@ export default function AnalyseView({ data, loading, error, wayback, onRetryWayb
         <TechnologiesCard technologies={technologies} />
         <GeoCard geo={geo} />
         <SummaryCard technologies={technologies} />
-        <SnapshotsCard wayback={wayback} onRetry={onRetryWayback} />
+        <SnapshotsCard wayback={wayback} onRetry={onRetryWayback} onViewHistorical={onViewHistorical} />
       </div>
     </section>
   );
@@ -60,9 +62,15 @@ function Row({ k, v }) {
 
 function DnsCard({ dns }) {
   if (!dns) return <Card title="DNS"><p className="muted">No DNS data.</p></Card>;
+  // Todas las IPs: A (IPv4) + AAAA (IPv6) si las hay, cada una en su propia fila
+  // etiquetada IP A, IP B, IP C…
+  const ips = [...(dns.A || []), ...(dns.AAAA || [])];
   return (
     <Card title="DNS">
-      <Row k="IP (A)" v={<span className="mono">{(dns.A || [])[0] || "—"}</span>} />
+      {ips.length === 0 && <Row k="IP" v="—" />}
+      {ips.map((ip, i) => (
+        <Row key={ip} k={`IP ${String.fromCharCode(65 + i)}`} v={<span className="mono">{ip}</span>} />
+      ))}
       <Row k="Nameservers" v={<span className="mono">{(dns.NS || []).slice(0, 2).join(", ") || "—"}</span>} />
       <Row k="MX" v={<span className="mono">{(dns.MX || [])[0] || "—"}</span>} />
     </Card>
@@ -81,20 +89,65 @@ function WhoisCard({ whois }) {
   );
 }
 
+// "HTML contiene 'x'; script src contiene 'y'" → ["HTML contiene 'x'", ...]
+function splitEvidence(evidence) {
+  return (evidence || "").split(";").map((e) => e.trim()).filter(Boolean);
+}
+
 function TechnologiesCard({ technologies }) {
+  // openName: evidencia abierta al hacer click en una tecnología (una a la vez).
+  // expandAll: muestra TODAS las evidencias inline. La tarjeta NO crece: el
+  //            contenido desborda dentro de .scroll (alto fijo) y hace scroll
+  //            interno, así la grilla (DNS/WHOIS) no se deforma.
+  const [openName, setOpenName] = useState(null);
+  const [expandAll, setExpandAll] = useState(false);
+
   return (
     <Card title={`Technologies (${technologies.length})`}>
+      {technologies.length > 0 && (
+        <button
+          className="tech-expand"
+          onClick={() => { setExpandAll((v) => !v); setOpenName(null); }}
+        >
+          {expandAll ? "▾ Colapsar evidencias" : "▸ Ver todas las evidencias"}
+        </button>
+      )}
       <div className="scroll">
         {technologies.length === 0 && <p className="muted">No technologies detected.</p>}
-        {technologies.map((t) => (
-          <div className="tech" key={t.name}>
-            <div>
-              <div className="tech__name">{t.name}</div>
-              <div className="tech__cat">{t.category}</div>
+        {technologies.map((t) => {
+          const open = expandAll || openName === t.name;
+          const items = splitEvidence(t.evidence);
+          return (
+            <div className="tech-item" key={t.name}>
+              <button
+                type="button"
+                className={"tech" + (open ? " is-open" : "")}
+                onClick={() => { if (!expandAll) setOpenName(openName === t.name ? null : t.name); }}
+                aria-expanded={open}
+              >
+                <span className="tech__dot" style={{ background: categoryColor(t.category) }} />
+                <div className="tech__meta">
+                  <div className="tech__name">
+                    {t.name}
+                    {t.version && <span className="tech__ver">v{t.version}</span>}
+                  </div>
+                  <div className="tech__cat">{t.category}</div>
+                </div>
+                <span className={"tech__conf " + confClass(t.confidence)}>{t.confidence}%</span>
+              </button>
+              {open && (
+                <div className="tech__evidence">
+                  <div className="tech__evidence-title">Evidencias</div>
+                  {items.length ? (
+                    <ul>{items.map((e, i) => <li key={i}>{e}</li>)}</ul>
+                  ) : (
+                    <span className="muted">Sin evidencia registrada.</span>
+                  )}
+                </div>
+              )}
             </div>
-            <span className={"tech__conf " + confClass(t.confidence)}>{t.confidence}%</span>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </Card>
   );
@@ -136,13 +189,18 @@ function SummaryCard({ technologies }) {
   );
 }
 
-function SnapshotsCard({ wayback, onRetry }) {
+function SnapshotsCard({ wayback, onRetry, onViewHistorical }) {
   const snapshots = wayback?.data?.snapshots ?? [];
   return (
     <Card title="Snapshots (Wayback Machine)" span={3}>
       {wayback?.status === "idle" && <p className="muted">—</p>}
       {wayback?.status === "loading" && (
-        <p className="muted">Cargando snapshots en segundo plano… (Wayback suele ser lento)</p>
+        <Scanning text="Waiting for Wayback Machine results..." />
+      )}
+      {wayback?.status === "done" && snapshots.length > 0 && (
+        <button className="hist-cta" onClick={onViewHistorical}>
+          Ver todas las snapshots con sus tecnologías ↗
+        </button>
       )}
       {wayback?.status === "failed" && (
         <div className="snap-fail">

@@ -9,8 +9,8 @@ pytestmark = pytest.mark.django_db
 
 
 FAKE_TECHS = [
-    {"name": "React", "category": "frontend", "confidence": 100, "evidence": "html"},
-    {"name": "Nginx", "category": "server", "confidence": 60, "evidence": "header"},
+    {"name": "React", "category": "frontend", "version": None, "confidence": 100, "evidence": "html"},
+    {"name": "Nginx", "category": "server", "version": "1.25.3", "confidence": 60, "evidence": "header"},
 ]
 
 

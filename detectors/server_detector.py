@@ -49,8 +49,10 @@ class ServerDetector(BaseDetector):
             score += s; evidence += e
 
             if score >= sig["threshold"] and evidence:
-                logger.info("Server detected: %s (score=%d, threshold=%d)", tech, score, sig["threshold"])
-                results.append(self._build_result(tech, "server", score, evidence))
+                header_text = " ".join(f"{k}: {v}" for k, v in hdrs.items())
+                version = self._extract_version(sig, [header_text, html_lower])
+                logger.info("Server detected: %s (score=%d, threshold=%d, version=%s)", tech, score, sig["threshold"], version)
+                results.append(self._build_result(tech, "server", score, evidence, version))
 
         logger.debug("Server detection complete: %d servers found", len(results))
         return results

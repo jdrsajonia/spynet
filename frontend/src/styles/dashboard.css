@@ -31,6 +31,10 @@
 .rad__head { color: var(--text-muted); font-size: 12px; border-top: none; }
 .rad__domain { font-weight: 500; }
 .rad__techs, .rad__date { color: var(--text-muted); }
+/* cuerpo scrollable: si hay muchos análisis, la lista hace scroll y la cabecera
+   de columnas queda fija arriba */
+.rad__body { max-height: 360px; overflow-y: auto; }
+.rad__count { margin-left: auto; font-size: 12px; font-weight: 600; color: var(--text-muted); background: var(--bg-1); border: 1px solid var(--panel-border); padding: 1px 10px; border-radius: 20px; }
 
 /* ── fila de charts (Donut | Confidence | Activity) ─── */
 .dash-charts { display: grid; grid-template-columns: 1.2fr 1fr 2.2fr; gap: var(--gap); }

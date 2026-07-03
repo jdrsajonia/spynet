@@ -71,8 +71,10 @@ class BackendDetector(BaseDetector):
                                 evidence.append(f"ruta '{path}' contiene '{indicator}'")
 
             if score >= sig["threshold"] and evidence:
-                logger.info("Backend detected: %s (score=%d, threshold=%d)", tech, score, sig["threshold"])
-                results.append(self._build_result(tech, "backend", score, evidence))
+                header_text = " ".join(f"{k}: {v}" for k, v in hdrs.items())
+                version = self._extract_version(sig, [header_text, html_lower, script_text, js_combined, res_combined])
+                logger.info("Backend detected: %s (score=%d, threshold=%d, version=%s)", tech, score, sig["threshold"], version)
+                results.append(self._build_result(tech, "backend", score, evidence, version))
 
         logger.debug("Backend detection complete: %d technologies found", len(results))
         return results

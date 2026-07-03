@@ -19,6 +19,15 @@ MAX_JS_SIZE  = 500_000  # bytes — skip bundles larger than 500 KB
 # Score assigned to a confirmed probe-path hit (strategy 3)
 PROBE_PATH_SCORE = 60
 
+# Confidence dada a una tecnología inferida por `implies` (no observada
+# directamente, sino deducida de otra que sí se detectó). Deliberadamente baja:
+# es una pista razonable del stack, no una detección con evidencia propia.
+IMPLIED_CONFIDENCE = 40
+
+# Concurrencia del sondeo de rutas (estrategia 3). Las rutas se piden en
+# paralelo para que todas quepan dentro del presupuesto de tiempo.
+PROBE_MAX_WORKERS = 6
+
 # Robustez del scoring: máximo de coincidencias que aportan score por categoría.
 # Evita que una tecnología con muchos patrones débiles acumule score sin límite
 # y cruce el threshold con evidencia ruidosa. Una tech legítima cruza su umbral

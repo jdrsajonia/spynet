@@ -37,7 +37,14 @@
 html, body, #root { height: 100%; margin: 0; }
 
 body {
-  background: radial-gradient(1200px 600px at 72% -12%, #16234a 0%, var(--bg) 55%);
+  /* Capas (de arriba abajo en el stack):
+       1. fundido a negro en el fondo de la pantalla
+       2. resplandor rojo tenue entrando por el borde derecho (como los mockups)
+       3. halo azul original arriba-derecha */
+  background:
+    linear-gradient(180deg, transparent 62%, rgba(0, 0, 0, 0.85) 100%),
+    /* radial-gradient(950px 2080px at 100% 100%, rgba(255, 0, 0, 0.18) 0%, transparent 62%),*/
+    radial-gradient(1200px 600px at 72% -12%, #16234a 0%, var(--bg) 55%);
   background-attachment: fixed;
   color: var(--text);
   font-family: var(--font);

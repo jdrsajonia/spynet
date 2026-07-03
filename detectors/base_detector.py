@@ -1,6 +1,10 @@
+import logging
+import re
 from abc import ABC, abstractmethod
 
 from config.constants import MAX_CATEGORY_MATCHES
+
+logger = logging.getLogger("spynet.detectors.base")
 
 
 class BaseDetector(ABC):
@@ -111,10 +115,44 @@ class BaseDetector(ABC):
     def _score_to_confidence(self, score: int) -> int:
         return min(score, 100)
 
-    def _build_result(self, name: str, category: str, score: int, evidence: list[str]) -> dict:
+    def _extract_version(self, sig: dict, haystacks: list[str]) -> str | None:
+        """
+        Extrae la versión de la tecnología aplicando los `version_patterns`
+        (regex con un grupo de captura) de la firma sobre las fuentes dadas.
+
+        Los patrones son opcionales: una firma sin `version_patterns` nunca
+        reporta versión. Se devuelve la primera captura no vacía encontrada,
+        recorriendo fuentes en el orden en que llegan (de más a menos fiable).
+        Ej.: r"nginx/([\\d.]+)" sobre "server: nginx/1.25.3" → "1.25.3".
+        """
+        patterns = sig.get("version_patterns", [])
+        if not patterns:
+            return None
+        for haystack in haystacks:
+            if not haystack:
+                continue
+            for pat in patterns:
+                try:
+                    m = re.search(pat, haystack, re.IGNORECASE)
+                except re.error as exc:
+                    logger.warning("Invalid version_pattern %r: %s", pat, exc)
+                    continue
+                if m and m.groups() and m.group(1):
+                    return m.group(1)
+        return None
+
+    def _build_result(
+        self,
+        name: str,
+        category: str,
+        score: int,
+        evidence: list[str],
+        version: str | None = None,
+    ) -> dict:
         return {
             "name":       name,
             "category":   category,
+            "version":    version,
             "confidence": self._score_to_confidence(score),
             "evidence":   "; ".join(evidence)
         }

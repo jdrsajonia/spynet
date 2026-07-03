@@ -1,6 +1,6 @@
 // Pantalla centrada que se muestra mientras corre un análisis.
 // Coloca la imagen en frontend/public/scanning.png
-export default function Scanning({ text = "We, the exegetes of the web, are scanning for you…" }) {
+export default function Scanning({ text = "Exegetes of the web, decoding this site's every layer…" }) {
   return (
     <div className="scanning">
       <img

@@ -52,8 +52,9 @@ class FrontendDetector(BaseDetector):
             score += s; evidence += e
 
             if score >= sig["threshold"] and evidence:
-                logger.info("Frontend detected: %s (score=%d, threshold=%d)", tech, score, sig["threshold"])
-                results.append(self._build_result(tech, "frontend", score, evidence))
+                version = self._extract_version(sig, [script_text, res_combined, js_combined, html_lower])
+                logger.info("Frontend detected: %s (score=%d, threshold=%d, version=%s)", tech, score, sig["threshold"], version)
+                results.append(self._build_result(tech, "frontend", score, evidence, version))
 
         logger.debug("Frontend detection complete: %d technologies found", len(results))
         return results

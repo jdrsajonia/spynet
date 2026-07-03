@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 
 import Sidebar from "./components/Sidebar";
 import Topbar from "./components/Topbar";
@@ -6,6 +6,7 @@ import { Icon } from "./components/icons";
 import AnalyseView from "./views/AnalyseView";
 import CompareView from "./views/CompareView";
 import DashboardView from "./views/DashboardView";
+import HistoricalView from "./views/HistoricalView";
 import ApiTesterView from "./views/ApiTesterView";
 import { call } from "./api";
 
@@ -14,13 +15,14 @@ import "./styles/layout.css";
 import "./styles/analyse.css";
 import "./styles/compare.css";
 import "./styles/dashboard.css";
+import "./styles/historical.css";
 
 // El contenedor: aquí vive el ESTADO y la LÓGICA (qué se pide al backend). Las
 // vistas y el shell son presentacionales y solo reciben props. Esto mantiene la
 // lógica separada de la presentación.
 const NAV = [
   { key: "analyse",    label: "Analyse",    icon: Icon.analyse },
-  { key: "historical", label: "Historical", icon: Icon.historical, disabled: true },
+  { key: "historical", label: "Historical", icon: Icon.historical },
   { key: "dashboard",  label: "Dashboard",  icon: Icon.dashboard },
   { key: "compare",    label: "Compare",    icon: Icon.compare },
   { key: "apidocs",    label: "API Docs",   icon: Icon.apidocs,    disabled: true },
@@ -43,6 +45,16 @@ export default function App() {
   const [dashLoading, setDashLoading] = useState(false);
   const [dashError, setDashError] = useState(null);
 
+  // Historical: análisis pasivo de todas las capturas de Wayback (solo tecnologías).
+  const [histUrl, setHistUrl] = useState("");
+  const [histData, setHistData] = useState(null);
+  const [histLoading, setHistLoading] = useState(false);
+  const [histError, setHistError] = useState(null);
+  // Caché por URL: el análisis histórico es caro (descarga ~12 páginas
+  // archivadas). Una vez computado para una URL, reingresar o volver a pulsar
+  // "Ver todas las snapshots" lo muestra al instante, sin volver a llamar la API.
+  const histCache = useRef({});
+
   // El dashboard es de solo lectura: se carga al entrar a la pestaña.
   useEffect(() => {
     if (view !== "dashboard" || dashData || dashLoading) return;
@@ -52,7 +64,7 @@ export default function App() {
       try {
         const [statsRes, listRes] = await Promise.all([
           call("/stats/"),
-          call("/analyses/?page_size=6"),
+          call("/analyses/?page_size=100"),
         ]);
         if (statsRes.body.success && listRes.body.success) {
           setDashData({ stats: statsRes.body.data, recent: listRes.body.data });
@@ -111,6 +123,50 @@ export default function App() {
     }
   }
 
+  // Historical: solo Wayback, analizando las tecnologías de cada captura. Es
+  // pesado (descarga ~12 páginas archivadas), por eso el pingüino cubre la espera.
+  // Si ya se computó para esta URL, sale del caché sin tocar la API.
+  async function runHistorical(url) {
+    const key = url.trim().toLowerCase();
+    if (!key) return;
+
+    const cached = histCache.current[key];
+    if (cached) {
+      setHistError(null);
+      setHistLoading(false);
+      setHistData(cached);
+      return;
+    }
+
+    setHistLoading(true);
+    setHistError(null);
+    setHistData(null);
+    try {
+      const { status, body } = await call("/analyses/historical/", {
+        method: "POST",
+        body: JSON.stringify({ url }),
+      });
+      if (body.success) {
+        histCache.current[key] = body.data;
+        setHistData(body.data);
+      } else {
+        setHistError(body.error?.message || `Error ${status}`);
+      }
+    } catch {
+      setHistError("No se pudo conectar con el backend (¿corriendo en :8000?).");
+    } finally {
+      setHistLoading(false);
+    }
+  }
+
+  // Forma 1: desde Analyse, "Ver todas las snapshots" salta a Historical con la
+  // URL precargada y dispara el análisis histórico automáticamente.
+  function viewHistorical(url) {
+    setView("historical");
+    setHistUrl(url);
+    runHistorical(url);
+  }
+
   async function runCompare(urlA, urlB) {
     if (!urlA.trim() || !urlB.trim()) return;
     setCmpLoading(true);
@@ -134,7 +190,7 @@ export default function App() {
     <div className="app">
       <Sidebar items={NAV} active={view} onSelect={setView} />
       <div>
-        <Topbar onSearch={runAnalyze} busy={loading} />
+        <Topbar onSearch={runAnalyze} busy={loading} showSearch={view !== "historical"} />
         <main className="content">
           {view === "analyse" && (
             <AnalyseView
@@ -143,6 +199,17 @@ export default function App() {
               error={error}
               wayback={wayback}
               onRetryWayback={() => data?.id && loadWayback(data.id)}
+              onViewHistorical={() => data?.url && viewHistorical(data.url)}
+            />
+          )}
+          {view === "historical" && (
+            <HistoricalView
+              url={histUrl}
+              onUrlChange={setHistUrl}
+              onAnalyze={runHistorical}
+              data={histData}
+              loading={histLoading}
+              error={histError}
             />
           )}
           {view === "compare" && (
@@ -152,7 +219,7 @@ export default function App() {
             <DashboardView data={dashData} loading={dashLoading} error={dashError} />
           )}
           {view === "tester" && <ApiTesterView />}
-          {!["analyse", "compare", "dashboard", "tester"].includes(view) && (
+          {!["analyse", "historical", "compare", "dashboard", "tester"].includes(view) && (
             <div className="placeholder">— vista «{view}» pendiente —</div>
           )}
         </main>

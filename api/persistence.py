@@ -113,6 +113,7 @@ def _save_technologies(techs, *, analysis=None, snapshot=None):
         Technology(
             analysis=analysis, snapshot=snapshot,
             name=t["name"], category=t.get("category", ""),
+            version=t.get("version"),
             confidence=t.get("confidence", 0), evidence=t.get("evidence", ""),
         )
         for t in techs

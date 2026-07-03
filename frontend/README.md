@@ -1,6 +1,6 @@
 # SpyNet — Frontend (API Tester)
 
-Frontend **desacoplado** (React + Vite) que consume la API REST de SpyNet.
+Frontend **desacoplado** (React + Vite) que consume la API REST de Spynet.
 Por ahora es un **probador crudo**: cada pestaña ejecuta un endpoint y muestra
 el JSON tal cual lo devuelve el backend. Es la base sobre la que se construirán
 las vistas reales (Dashboard, Compare, Historical…).

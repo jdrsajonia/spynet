@@ -185,6 +185,7 @@ class Technology(models.Model):
         return {
             "name":       self.name,
             "category":   self.category,
+            "version":    self.version,
             "confidence": self.confidence,
             "evidence":   self.evidence,
         }
