@@ -48,9 +48,12 @@ WSGI_APPLICATION = "config.wsgi.application"
 ASGI_APPLICATION = "config.asgi.application"
 
 DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'spynet-db',
+        'USER': 'admin',
+        'PASSWORD': 'admin123',
+        'HOST': 'localhost',        
     }
 }
 
