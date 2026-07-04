@@ -2,52 +2,209 @@
 
 ![banner](assets/img/spynet_penguins.png)
 
-**Spynet** is a web application designed to analyze and map the technologies used by websites. It allows users to inspect, compare, and understand the technical composition of different web pages in a structured way.
+**Spynet** is a web application that analyzes and maps the technologies used by
+websites. It lets you inspect, compare, and understand the technical composition
+of web pages — their frontend/backend stack, server, CDN, analytics, DNS, WHOIS,
+geolocation, and how all of it has evolved over time via the Wayback Machine.
 
 ---
 
-## 🚀 Project Develop
+## 🚀 Quick Start
 
-Spynet goes beyond simple technology detection. The system:
+The project has two parts that run together: a **Django backend** (REST API) and a
+**React + Vite frontend**. Start the backend first, then the frontend.
 
-- 📊 Analyzes the technological structure of a website  
-- 🗄️ Stores results in a database  
-- 🔍 Allows comparison between multiple websites  
-- 🔌 Exposes data through a REST API  
+### 1. Backend (Django API)
 
-This turns it into a small **web intelligence repository**, useful for both analysis and learning.
+From the project root:
+
+```bash
+# 1. Create and activate a virtual environment
+python -m venv .venv
+#    Windows (PowerShell):
+.venv\Scripts\Activate.ps1
+#    Linux / macOS:
+source .venv/bin/activate
+
+# 2. Install dependencies
+pip install -r requirements.txt
+
+# 3. Create the database (SQLite) with all tables
+python manage.py migrate
+
+# 4. Run the server
+python manage.py runserver
+```
+
+The API is now live at **`http://127.0.0.1:8000/`**.
+
+> ⚠️ **Don't skip `migrate`.** The database file (`db.sqlite3`) is **not** in the
+> repo — each clone builds its own. Without `migrate` the first scan fails with
+> `no such table: api_domain`.
+
+### 2. Frontend (React + Vite)
+
+In a **second terminal**, with the backend still running:
+
+```bash
+cd frontend
+npm install        # first time only
+npm run dev        # dev server at http://localhost:5173
+```
+
+Open **`http://localhost:5173`**. Port `5173` is already allowed in the backend's
+CORS config, so keep **both** servers running: Django on `:8000`, Vite on `:5173`.
+
+The backend URL is configured in `frontend/.env`:
+
+```
+VITE_API_BASE_URL=http://localhost:8000/api/v1
+```
+
+> **Tip:** live analysis hits external services (DNS, WHOIS, Geo, Wayback), so
+> heavy domains like `google.com` can take a while. Use `example.com` for quick
+> tests.
 
 ---
 
-## ⚙️ What does it analyze?
+## 🗂️ Project Structure
 
-Given a domain, Spynet can retrieve:
+```
+.
+├── manage.py                # Django entry point
+├── analyzer.py              # Facade: orchestrates services + detectors for one URL
+├── cli.py                   # `spynet` command-line interface
+├── requirements.txt         # Python dependencies
+│
+├── config/                  # Django project config
+│   ├── settings.py          #   DB connection, apps, CORS, throttling
+│   ├── urls.py              #   root URL routing
+│   └── constants.py         #   scoring constants (timeouts, caps, weights)
+│
+├── api/                     # REST API (Django app)
+│   ├── models.py            #   ORM models = DB tables (Domain, Analysis, Technology…)
+│   ├── views.py             #   endpoint logic
+│   ├── urls.py              #   /api/v1/... routes
+│   ├── persistence.py       #   saves analyzer results into the DB
+│   ├── serializers.py       #   request validation
+│   └── migrations/          #   DB schema history (applied by `migrate`)
+│
+├── detectors/               # Technology detection (Strategy pattern)
+│   ├── base_detector.py     #   shared scoring/matching logic
+│   ├── frontend_detector.py #   one detector per category…
+│   ├── backend_detector.py
+│   ├── cdn_detector.py
+│   ├── server_detector.py
+│   ├── analytics_detector.py
+│   └── detector_factory.py  #   builds detectors from signatures (Factory)
+│
+├── core/
+│   ├── signatures.json      # the pattern database (all technologies + weights)
+│   ├── signature_loader.py  #   loads signatures once (Singleton)
+│   └── js_fetcher.py        #   downloads JS bundles for deeper detection
+│
+├── services/                # External-data services (each decoupled)
+│   ├── dns_service.py        #   DNS records
+│   ├── whois_service.py      #   WHOIS
+│   ├── geo_service.py        #   IP geolocation
+│   └── wayback_service.py    #   Wayback Machine snapshots
+│
+├── frontend/                # React + Vite SPA
+│   └── src/
+│       ├── views/            #   Analyse, Historical, Dashboard, Compare, API Tester
+│       ├── components/       #   Sidebar, Topbar, charts…
+│       ├── styles/           #   design tokens + per-view CSS
+│       └── api.js            #   single layer that talks to the backend
+│
+└── tests/                   # pytest suite (detectors, services, API)
+```
 
-- 🧩 Technologies (frontend, backend, services)  
-- 🌐 Domain information (WHOIS)  
-- 📡 DNS data  
-- 📅 Historical snapshots (optional)  
+**How the pieces connect:** `analyzer.py` (Facade) runs the `services/` for
+infrastructure data and the `detectors/` for technologies, using the patterns in
+`core/signatures.json`. `api/views.py` exposes that over HTTP and
+`api/persistence.py` stores it through the ORM models into the SQLite database
+configured in `config/settings.py`.
 
 ---
 
-## 🔍 Main Features
+## 🌐 REST API
 
-- URL analysis  
-- Results visualization  
-- Website comparison  
-- API access  
-- Analysis storage  
+Base URL: `http://127.0.0.1:8000/api/v1/`
+
+| Method | URL | Description |
+|--------|-----|-------------|
+| `POST` | `/analyses/` | Analyze a URL (live) and persist the result |
+| `GET`  | `/analyses/` | List saved analyses (paginated) |
+| `GET`  | `/analyses/<id>/` | Get a saved analysis |
+| `POST` | `/analyses/<id>/wayback/` | Load Wayback snapshots for an analysis |
+| `POST` | `/analyses/snapshot/` | Analyze a single Wayback snapshot (passive) |
+| `POST` | `/analyses/historical/` | Analyze technologies across all snapshots of a domain |
+| `POST` | `/analyses/compare/` | Compare two URLs (A/B) |
+| `GET`  | `/analyses/compare/?a=1&b=2` | Compare two saved analyses by id |
+| `GET`  | `/domains/<name>/analyses/` | All analyses for a domain |
+| `GET`  | `/stats/` | Aggregated stats across stored analyses |
+
+> `POST /analyses/` runs a full live analysis and **persists** it, so it is then
+> retrievable via `GET /analyses/<id>/`, comparable via `/analyses/compare/`, and
+> aggregated in `/stats/`. `POST /analyses/historical/` is heavier: it downloads
+> and analyzes ~12 archived captures. The `ai-analyses/` endpoint is still a stub.
+
+### Example requests
+
+**PowerShell (Windows):**
+```powershell
+# Analyze a URL
+Invoke-RestMethod -Method POST -Uri http://127.0.0.1:8000/api/v1/analyses/ -ContentType "application/json" -Body '{"url": "example.com"}' | ConvertTo-Json -Depth 10
+
+# Get an analysis
+Invoke-RestMethod -Uri http://127.0.0.1:8000/api/v1/analyses/1/ | ConvertTo-Json -Depth 10
+```
+
+**curl (Linux/macOS):**
+```bash
+# Analyze a URL
+curl -X POST http://127.0.0.1:8000/api/v1/analyses/ -H "Content-Type: application/json" -d '{"url": "example.com"}'
+
+# Get an analysis
+curl http://127.0.0.1:8000/api/v1/analyses/1/
+```
+
+**VSCode REST Client** — create a `test.http` file:
+```http
+POST http://127.0.0.1:8000/api/v1/analyses/
+Content-Type: application/json
+
+{"url": "example.com"}
+
+###
+
+GET http://127.0.0.1:8000/api/v1/analyses/1/
+```
 
 ---
 
-## 🧠 Approach
+## 💻 CLI
 
-The system follows a modular architecture:
+Spynet also ships a command-line interface. Install the package in editable mode
+from the project root (registers the `spynet` command pointing at the local
+source, so code changes take effect immediately):
 
-- Backend built with Django + REST API  
-- Decoupled services for each type of analysis  
-- Relational database for persistence  
-- Scalable towards historical and analytical features  
+```bash
+pip install -e .
+```
+
+```bash
+# Basic analysis
+spynet example.com
+
+# Full WHOIS and geo data
+spynet example.com --depth
+
+# Analyze a Wayback Machine snapshot
+spynet example.com --snapshot <wayback-url>
+```
+
+Output is JSON printed to stdout.
 
 ---
 
@@ -57,7 +214,8 @@ Technology detection is the core of Spynet. Every technology is described in
 [`core/signatures.json`](core/signatures.json) by a set of **patterns** grouped
 into categories (HTML, script `src`, headers, cookies, downloaded JS, static
 resources, DNS/IP for CDNs). A `DetectorFactory` builds one detector per category
-(`frontend`, `backend`, `cdn`, `server`) following the **Strategy** pattern.
+(`frontend`, `backend`, `cdn`, `server`, `analytics`) following the **Strategy**
+pattern.
 
 ### Weighted scoring
 
@@ -97,135 +255,35 @@ opposite, in fact. Two rules keep it accurate:
 
 ---
 
+## ⚙️ What does it analyze?
+
+Given a domain, Spynet retrieves:
+
+- 🧩 Technologies — frontend, backend, server, CDN, analytics (with version when detectable)
+- 🌐 Domain information (WHOIS)
+- 📡 DNS records (all IPs, nameservers, MX)
+- 📍 IP geolocation
+- 📅 Historical snapshots and the technology stack of each (Wayback Machine)
+
+The frontend exposes this through several views: **Analyse**, **Historical**,
+**Dashboard**, **Compare**, and a raw **API Tester**.
+
+---
+
 ## 🛠️ Stack
 
-- Python / Django  
-- Django REST Framework  
-- SQLite / PostgreSQL  
-- Docker  
-- GitHub Actions  
+- Python / Django + Django REST Framework
+- SQLite (default; swappable for PostgreSQL in `config/settings.py`)
+- React + Vite (frontend)
+- pytest (tests)
 
 ---
 
-## 💻 CLI — Quick Start
-
-### Installation
-
-Clone the repo and install in editable mode from the project root:
+## ✅ Tests
 
 ```bash
-pip install -e .
+pytest
 ```
-
-This registers the `spynet` command in your PATH, pointing directly to the local source so any code change takes effect immediately without reinstalling.
-
-### Usage
-
-```bash
-# Basic analysis
-spynet example.com
-
-# Full WHOIS and geo data
-spynet example.com --depth
-
-# Analyze a Wayback Machine snapshot
-spynet example.com --snapshot <wayback-url>
-```
-
-Output is JSON printed to stdout.
-
----
-
-## 🌐 REST API — Local Development
-
-### Start the server
-
-```bash
-python manage.py runserver
-```
-
-The API will be available at `http://127.0.0.1:8000/`.
-
-### Endpoints
-
-| Method | URL | Description |
-|--------|-----|-------------|
-| `POST` | `/api/v1/analyses/` | Analyze a URL |
-| `POST` | `/api/v1/analyses/snapshot/` | Analyze a Wayback Machine snapshot |
-| `GET` | `/api/v1/analyses/<id>/` | Get a saved analysis |
-| `GET` | `/api/v1/analyses/compare/?a=1&b=2` | Compare two saved analyses |
-| `GET` | `/api/v1/stats/` | Aggregated stats across stored analyses |
-
-### Example requests
-
-**PowerShell (Windows):**
-```powershell
-# Analyze a URL
-Invoke-RestMethod -Method POST -Uri http://127.0.0.1:8000/api/v1/analyses/ -ContentType "application/json" -Body '{"url": "example.com"}' | ConvertTo-Json -Depth 10
-
-# Get an analysis
-Invoke-RestMethod -Uri http://127.0.0.1:8000/api/v1/analyses/1/ | ConvertTo-Json -Depth 10
-```
-
-**curl (Linux/macOS):**
-```bash
-# Analyze a URL
-curl -X POST http://127.0.0.1:8000/api/v1/analyses/ -H "Content-Type: application/json" -d '{"url": "example.com"}'
-
-# Get an analysis
-curl http://127.0.0.1:8000/api/v1/analyses/1/
-```
-
-**VSCode REST Client** — create a `test.http` file:
-```http
-POST http://127.0.0.1:8000/api/v1/analyses/
-Content-Type: application/json
-
-{"url": "example.com"}
-
-###
-
-GET http://127.0.0.1:8000/api/v1/analyses/1/
-```
-
-> **Note:** `POST /analyses/` runs a full live analysis and **persists** it; the
-> result is then retrievable via `GET /analyses/<id>/`, comparable via
-> `/analyses/compare/`, and aggregated in `/stats/`. `POST /analyses/snapshot/`
-> runs a passive analysis over a Wayback snapshot (not persisted). The
-> `ai-analyses/` endpoint is still a stub.
-
----
-
-## 🖥️ Frontend (API Tester)
-
-A **decoupled** React + Vite app lives in [`frontend/`](frontend/). For now it is
-a raw API tester: each tab runs one endpoint and dumps the JSON response on
-screen. It is the base for the real views (Dashboard, Compare, Historical…).
-
-### Requirements
-- Node.js 18+ and npm
-- The backend running on `http://localhost:8000` (`python manage.py runserver`)
-
-### Run
-
-```bash
-cd frontend
-npm install        # download dependencies (first time only)
-npm run dev        # start the dev server at http://localhost:5173
-```
-
-Port `5173` is already allowed in the backend's CORS configuration. Keep **both**
-servers running at once: Django on `:8000` and Vite on `:5173`.
-
-The backend URL is configured in `frontend/.env`:
-
-```
-VITE_API_BASE_URL=http://localhost:8000/api/v1
-```
-
-> **Tip:** live analysis hits external services (DNS, WHOIS, Geo, Wayback), so
-> heavy domains like `google.com` can take a while. Use `example.com` for quick
-> tests.
 
 ---
 
