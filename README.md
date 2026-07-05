@@ -16,6 +16,10 @@ The project has two parts that run together: a **Django backend** (REST API) and
 
 ### 1. Backend (Django API)
 
+**Prerequisite:** the database runs on **PostgreSQL inside a Docker container**
+(see `docker-compose.yml`), so you need **Docker** installed
+([Docker Desktop](https://www.docker.com/products/docker-desktop/) on Windows/macOS).
+
 From the project root:
 
 ```bash
@@ -29,17 +33,28 @@ source .venv/bin/activate
 # 2. Install dependencies
 pip install -r requirements.txt
 
-# 3. Create the database (SQLite) with all tables
+# 3. Start the PostgreSQL database (Docker container, runs in the background)
+docker compose up -d
+
+# 4. Create the tables inside PostgreSQL
 python manage.py migrate
 
-# 4. Run the server
+# 5. Run the server
 python manage.py runserver
 ```
 
 The API is now live at **`http://127.0.0.1:8000/`**.
 
-> ⚠️ **Don't skip `migrate`.** The database file (`db.sqlite3`) is **not** in the
-> repo — each clone builds its own. Without `migrate` the first scan fails with
+> 🐘 **The database lives in Docker.** `docker compose up -d` starts a PostgreSQL
+> container (`spynet_postgres_db`, listening on `localhost:5432`) whose data
+> persists in a Docker volume. Django connects to it via the `DATABASES` block in
+> `config/settings.py`. **Postgres must be running before `migrate`** — otherwise
+> the connection is refused. Useful commands: `docker compose ps` (status),
+> `docker compose logs -f` (logs), `docker compose stop` (pause without deleting
+> data), `docker compose down` (remove the container; the data volume survives).
+
+> ⚠️ **Don't skip `migrate`.** The database starts **empty** — each clone builds
+> its own schema. Without `migrate` the first scan fails with
 > `no such table: api_domain`.
 
 ### 2. Frontend (React + Vite)
@@ -75,6 +90,7 @@ VITE_API_BASE_URL=http://localhost:8000/api/v1
 ├── analyzer.py              # Facade: orchestrates services + detectors for one URL
 ├── cli.py                   # `spynet` command-line interface
 ├── requirements.txt         # Python dependencies
+├── docker-compose.yml       # PostgreSQL database container
 │
 ├── config/                  # Django project config
 │   ├── settings.py          #   DB connection, apps, CORS, throttling
@@ -122,8 +138,8 @@ VITE_API_BASE_URL=http://localhost:8000/api/v1
 **How the pieces connect:** `analyzer.py` (Facade) runs the `services/` for
 infrastructure data and the `detectors/` for technologies, using the patterns in
 `core/signatures.json`. `api/views.py` exposes that over HTTP and
-`api/persistence.py` stores it through the ORM models into the SQLite database
-configured in `config/settings.py`.
+`api/persistence.py` stores it through the ORM models into the PostgreSQL database
+(running in the Docker container) configured in `config/settings.py`.
 
 ---
 
@@ -273,7 +289,7 @@ The frontend exposes this through several views: **Analyse**, **Historical**,
 ## 🛠️ Stack
 
 - Python / Django + Django REST Framework
-- SQLite (default; swappable for PostgreSQL in `config/settings.py`)
+- PostgreSQL (runs in a Docker container via `docker-compose.yml`)
 - React + Vite (frontend)
 - pytest (tests)
 
