@@ -23,6 +23,10 @@
   box-shadow: var(--shadow);
   backdrop-filter: blur(6px);
 }
+/* Solo las cards del Analyse (dentro de .grid) van en flex-column, para que su
+   área .scroll se estire hasta el alto que el grid le da a la card. NO se aplica
+   global para no romper layouts como los KPIs del dashboard (.kpi es flex-row). */
+.grid > .card { display: flex; flex-direction: column; }
 .card__title { display: flex; align-items: center; gap: 8px; margin: 0 0 14px; font-size: 14px; font-weight: 600; }
 .card__title .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--blue); }
 .card__more { display: block; margin-top: 12px; font-size: 12.5px; color: var(--text-muted); text-decoration: none; }
@@ -34,6 +38,46 @@
 .kv__k { color: var(--text-muted); white-space: nowrap; }
 .kv__v { color: var(--text); text-align: right; word-break: break-word; }
 .mono { font-family: var(--mono); font-size: 12.5px; }
+
+/* Domain Details: sub-cabecera de grupo (ej. "SSL Certificate", "Email Security").
+   Más aire arriba para que se lea como bloques separados, no un muro de filas. */
+.dd-subhead { margin: 18px 0 8px; padding-top: 11px; font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); border-top: 1px solid rgba(255, 255, 255, 0.07); }
+.dd-status { font-size: 11.5px; word-break: break-word; }
+.tls-bad { color: var(--red); background: rgba(239, 68, 68, 0.12); }
+
+/* sub-cabecera COLAPSABLE (SSL): botón enmarcado (caja + borde + chevron azul)
+   para que se lea claramente como algo desplegable, distinto de las estáticas. */
+.dd-subhead-toggle {
+  display: flex; align-items: center; gap: 10px;
+  width: 100%; margin: 16px 0 6px; padding: 8px 10px; text-align: left; cursor: pointer;
+  overflow: hidden; border-radius: 8px;
+  background: var(--bg-1); border: 1px solid var(--panel-border);
+  color: var(--text-muted); font: inherit; font-size: 10.5px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.5px;
+  transition: border-color 0.12s, color 0.12s;
+}
+.dd-subhead-toggle:hover { color: var(--text); border-color: var(--blue); }
+.dd-toggle-label { flex: 0 0 auto; }
+.dd-chevron { flex: 0 0 auto; color: var(--blue); font-size: 12px; }
+.dd-summary { flex: 1 1 auto; min-width: 0; text-align: right; font-weight: 500; text-transform: none; letter-spacing: 0; color: var(--text-dim); font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* chips de estado de correo/DNS (SPF, DMARC, DNSSEC) en una fila */
+.echips { display: flex; flex-wrap: wrap; gap: 7px; padding: 3px 0 4px; }
+.echip { font-size: 12.5px; font-weight: 600; padding: 4px 11px; border-radius: 7px; white-space: nowrap; }
+.echip--ok  { color: var(--green);    background: rgba(34, 197, 94, 0.12); }
+.echip--bad { color: var(--text-dim); background: rgba(255, 255, 255, 0.05); }
+
+/* registros DNS: cada tipo corto (A, AAAA, CNAME, NS, MX) apila sus valores */
+.dns-vals { display: flex; flex-direction: column; align-items: flex-end; gap: 3px; max-width: 100%; }
+.dns-vals__item { font-family: var(--mono); font-size: 12px; word-break: break-all; text-align: right; }
+
+/* TXT: colapsado por defecto (solo conteo); expandido va en caja con scroll de
+   alto fijo para no estirar el card aunque haya decenas de registros largos */
+.dns-txt__toggle { background: none; border: none; padding: 0; color: var(--text-muted); font: inherit; font-size: 12.5px; cursor: pointer; }
+.dns-txt__toggle:hover { color: var(--blue); }
+.dns-txt__box { max-height: 120px; overflow-y: auto; margin: 6px 0 2px; padding: 8px 10px; background: var(--bg-1); border: 1px solid var(--panel-border); border-radius: 8px; }
+.dns-txt__item { font-size: 11.5px; word-break: break-all; padding: 3px 0; color: var(--text); border-bottom: 1px solid rgba(255, 255, 255, 0.04); }
+.dns-txt__item:last-child { border-bottom: none; }
 
 /* tecnologías */
 .tech-item { border-bottom: 1px solid rgba(255, 255, 255, 0.04); }
@@ -49,6 +93,7 @@
 .tech__meta { flex: 1; min-width: 0; }
 .tech__name { font-size: 14px; display: flex; align-items: center; gap: 7px; }
 .tech__ver { font-size: 11px; font-family: var(--mono); color: var(--text-muted); background: rgba(255, 255, 255, 0.06); padding: 1px 6px; border-radius: 5px; }
+.tech__eol { font-size: 10px; font-weight: 700; letter-spacing: 0.4px; color: var(--red); background: rgba(239, 68, 68, 0.14); padding: 1px 6px; border-radius: 5px; }
 .tech__cat { font-size: 11px; color: var(--text-dim); text-transform: capitalize; margin-top: 1px; }
 .tech__conf { font-size: 12px; font-weight: 600; padding: 2px 9px; border-radius: 6px; flex: 0 0 auto; }
 .conf--high { color: var(--green); background: rgba(34, 197, 94, 0.12); }
@@ -76,7 +121,26 @@
 
 /* alto fijo: al ver todas las evidencias, la tarjeta NO crece — el contenido
    desborda aquí dentro y hace scroll interno, sin deformar la grilla */
-.scroll { max-height: 230px; overflow-y: auto; }
+/* .scroll se estira para llenar la card (flex:1) hasta el alto que fija el grid;
+   solo hace scroll si el contenido excede ese alto. El tope (max-height) evita
+   que una card con MUCHÍSimo contenido dispare el alto de toda la fila. */
+.scroll { flex: 1 1 auto; min-height: 0; max-height: 460px; overflow-y: auto; padding-right: 8px; }
+
+/* Scrollbar temática (delgada, azul sutil) que NO se dibuja encima del texto.
+   Estilizarla la saca del modo "overlay" de Windows; el padding-right deja aire. */
+.scroll, .dns-txt__box, .sec__list {
+  scrollbar-width: thin;                                   /* Firefox */
+  scrollbar-color: var(--panel-border) transparent;
+}
+.scroll::-webkit-scrollbar, .dns-txt__box::-webkit-scrollbar, .sec__list::-webkit-scrollbar { width: 8px; }
+.scroll::-webkit-scrollbar-track, .dns-txt__box::-webkit-scrollbar-track, .sec__list::-webkit-scrollbar-track { background: transparent; }
+.scroll::-webkit-scrollbar-thumb, .dns-txt__box::-webkit-scrollbar-thumb, .sec__list::-webkit-scrollbar-thumb {
+  background: var(--panel-border); border-radius: 8px;
+  border: 2px solid transparent; background-clip: content-box;
+}
+.scroll::-webkit-scrollbar-thumb:hover, .dns-txt__box::-webkit-scrollbar-thumb:hover, .sec__list::-webkit-scrollbar-thumb:hover {
+  background: rgba(86, 124, 209, 0.45); background-clip: content-box;
+}
 
 /* pingüino de carga embebido en una tarjeta (Wayback): más compacto que el
    escaneo a pantalla completa del análisis principal */
@@ -104,8 +168,34 @@
 .stat__num { font-size: 30px; font-weight: 700; line-height: 1; }
 .stat__label { margin-top: 6px; font-size: 12px; color: var(--text-muted); }
 
+/* nota de seguridad (A–F) + hallazgos desplegables, dentro del card Summary */
+.sec { margin-top: 14px; padding-top: 12px; border-top: 1px solid rgba(255, 255, 255, 0.07); }
+.sec__head { display: flex; align-items: center; gap: 12px; }
+.sec__grade { width: 44px; height: 44px; flex: 0 0 44px; display: grid; place-items: center; border-radius: 11px; font-size: 22px; font-weight: 800; }
+.sec__grade--A, .sec__grade--B { color: var(--green); background: rgba(34, 197, 94, 0.14); }
+.sec__grade--C { color: var(--amber); background: rgba(245, 158, 11, 0.14); }
+.sec__grade--D, .sec__grade--F { color: var(--red); background: rgba(239, 68, 68, 0.14); }
+.sec__title-lbl { font-size: 13px; font-weight: 600; }
+.sec__sub { font-size: 12px; color: var(--text-muted); margin-top: 1px; }
+.sec__toggle { margin-left: auto; padding: 6px 12px; background: var(--bg-1); border: 1px solid var(--panel-border); border-radius: 8px; color: var(--text-muted); font: inherit; font-size: 12px; cursor: pointer; }
+.sec__toggle:hover { color: var(--blue); border-color: var(--blue); }
+.sec__list { list-style: none; margin: 12px 0 0; padding: 0; max-height: 190px; overflow-y: auto; }
+.sec__item { display: flex; align-items: baseline; gap: 9px; padding: 6px 0; font-size: 12.5px; border-bottom: 1px solid rgba(255, 255, 255, 0.04); }
+.sec__item:last-child { border-bottom: none; }
+.sec__sev { flex: 0 0 auto; font-size: 9.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.3px; padding: 2px 6px; border-radius: 5px; }
+.sec__item--high .sec__sev { color: var(--red); background: rgba(239, 68, 68, 0.14); }
+.sec__item--medium .sec__sev { color: var(--amber); background: rgba(245, 158, 11, 0.14); }
+.sec__item--low .sec__sev { color: var(--text-muted); background: rgba(255, 255, 255, 0.06); }
+.sec__ftitle { color: var(--text); word-break: break-word; }
+
 /* snapshots (timeline horizontal con miniaturas del HTML real) */
 .timeline { display: flex; gap: 12px; overflow-x: auto; padding-bottom: 6px; }
+/* scrollbar horizontal temática (usa height, no width) */
+.timeline { scrollbar-width: thin; scrollbar-color: var(--panel-border) transparent; }
+.timeline::-webkit-scrollbar { height: 8px; }
+.timeline::-webkit-scrollbar-track { background: transparent; }
+.timeline::-webkit-scrollbar-thumb { background: var(--panel-border); border-radius: 8px; border: 2px solid transparent; background-clip: content-box; }
+.timeline::-webkit-scrollbar-thumb:hover { background: rgba(86, 124, 209, 0.45); background-clip: content-box; }
 .snap { min-width: 168px; padding: 12px; text-align: center; background: var(--bg-1); border: 1px solid var(--panel-border); border-radius: 11px; }
 .snap__thumb {
   position: relative;
@@ -115,7 +205,8 @@
   overflow: hidden;
   border-radius: 7px;
   border: 1px solid var(--panel-border);
-  background: #fff;
+  /* fondo oscuro del tema mientras carga el iframe (antes chillaba en blanco) */
+  background: var(--bg-1);
 }
 .snap__thumb iframe {
   position: absolute;

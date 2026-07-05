@@ -31,11 +31,11 @@ export default function AnalyseView({ data, loading, error, wayback, onRetryWayb
       </header>
 
       <div className="grid">
-        <DnsCard dns={dns} />
-        <WhoisCard whois={whois} />
-        <TechnologiesCard technologies={technologies} />
+        <DnsCard dns={dns} email={data.email_security} rdns={geo?.reverse_dns} />
+        <DomainDetailsCard whois={whois} tls={data.tls} />
+        <TechnologiesCard technologies={technologies} security={data.security} />
         <GeoCard geo={geo} />
-        <SummaryCard technologies={technologies} />
+        <SummaryCard technologies={technologies} security={data.security} />
         <SnapshotsCard wayback={wayback} onRetry={onRetryWayback} onViewHistorical={onViewHistorical} />
       </div>
     </section>
@@ -60,32 +60,184 @@ function Row({ k, v }) {
   );
 }
 
-function DnsCard({ dns }) {
+// Registros DNS "cortos" mostrados en orden; los tipos sin registros se ocultan.
+// TXT se trata aparte (colapsable) porque suele traer decenas de registros largos.
+const DNS_TYPES = ["A", "AAAA", "CNAME", "NS", "MX"];
+
+// Chip compacto de estado (SPF, DMARC, DNSSEC): verde ✓ presente / gris ✗ ausente.
+function EmailChip({ ok, label, title }) {
+  return (
+    <span className={"echip " + (ok ? "echip--ok" : "echip--bad")} title={title || ""}>
+      {ok ? "✓" : "✗"} {label}
+    </span>
+  );
+}
+
+// Política del registro DMARC para el chip: "…p=reject…" → "reject".
+function dmarcPolicy(dmarc) {
+  const m = (dmarc || "").match(/p=(\w+)/i);
+  return m ? m[1] : null;
+}
+
+function DnsCard({ dns, email, rdns }) {
+  const [showTxt, setShowTxt] = useState(false);
   if (!dns) return <Card title="DNS"><p className="muted">No DNS data.</p></Card>;
-  // Todas las IPs: A (IPv4) + AAAA (IPv6) si las hay, cada una en su propia fila
-  // etiquetada IP A, IP B, IP C…
-  const ips = [...(dns.A || []), ...(dns.AAAA || [])];
+
+  const groups = DNS_TYPES
+    .map((type) => [type, dns[type] || []])
+    .filter(([, vals]) => vals.length > 0);
+  const txt = dns.TXT || [];
+
+  if (groups.length === 0 && txt.length === 0 && !rdns && !email) {
+    return <Card title="DNS"><p className="muted">No DNS records.</p></Card>;
+  }
+
   return (
     <Card title="DNS">
-      {ips.length === 0 && <Row k="IP" v="—" />}
-      {ips.map((ip, i) => (
-        <Row key={ip} k={`IP ${String.fromCharCode(65 + i)}`} v={<span className="mono">{ip}</span>} />
+      <div className="scroll">
+      {groups.map(([type, vals]) => (
+        <Row
+          key={type}
+          k={type}
+          v={
+            <div className="dns-vals">
+              {vals.map((val, i) => (
+                <span className="mono dns-vals__item" key={i}>{val}</span>
+              ))}
+            </div>
+          }
+        />
       ))}
-      <Row k="Nameservers" v={<span className="mono">{(dns.NS || []).slice(0, 2).join(", ") || "—"}</span>} />
-      <Row k="MX" v={<span className="mono">{(dns.MX || [])[0] || "—"}</span>} />
+
+      {rdns && <Row k="PTR" v={<span className="mono">{rdns}</span>} />}
+
+      {/* TXT colapsado: por defecto solo el conteo; se expande en caja con scroll */}
+      {txt.length > 0 && (
+        <>
+          <div className="kv">
+            <span className="kv__k">TXT</span>
+            <button className="dns-txt__toggle" onClick={() => setShowTxt((v) => !v)}>
+              {txt.length} record{txt.length !== 1 ? "s" : ""} {showTxt ? "▾" : "▸"}
+            </button>
+          </div>
+          {showTxt && (
+            <div className="dns-txt__box">
+              {txt.map((val, i) => (
+                <div className="dns-txt__item mono" key={i} title={val}>{val}</div>
+              ))}
+            </div>
+          )}
+        </>
+      )}
+
+      {/* Email / DNS security: SPF, DMARC, DNSSEC en una sola fila de chips */}
+      {email && (
+        <>
+          <div className="dd-subhead">Email Security</div>
+          <div className="echips">
+            <EmailChip ok={!!email.spf} label="SPF" title={email.spf} />
+            <EmailChip
+              ok={!!email.dmarc}
+              label={dmarcPolicy(email.dmarc) ? `DMARC · ${dmarcPolicy(email.dmarc)}` : "DMARC"}
+              title={email.dmarc}
+            />
+            <EmailChip ok={email.dnssec} label="DNSSEC" />
+          </div>
+        </>
+      )}
+      </div>
     </Card>
   );
 }
 
-function WhoisCard({ whois }) {
-  if (!whois) return <Card title="WHOIS"><p className="muted">No WHOIS data.</p></Card>;
+// Fila que se OCULTA si el valor está vacío (consistente con la decisión de UI).
+function OptRow({ k, v }) {
+  if (v == null || v === "" || (Array.isArray(v) && v.length === 0)) return null;
+  return <Row k={k} v={v} />;
+}
+
+// Días desde hoy hasta una fecha ISO (negativo si ya pasó). Para cuentas regresivas.
+function daysUntil(iso) {
+  if (!iso) return null;
+  const d = new Date(iso);
+  return isNaN(d) ? null : Math.round((d - Date.now()) / 86400000);
+}
+
+function DateWithCountdown({ iso }) {
+  const days = daysUntil(iso);
   return (
-    <Card title="WHOIS">
-      <Row k="Registrar" v={whois.registrar} />
-      <Row k="Created" v={whois.creation_date ? prettyDate(whois.creation_date) : "—"} />
-      <Row k="Expires" v={whois.expiration_date ? prettyDate(whois.expiration_date) : "—"} />
-      <Row k="Age" v={whois.domain_age_years != null ? whois.domain_age_years + " years" : "—"} />
+    <span>
+      {prettyDate(iso)}
+      {days != null && <span className="muted"> · {days < 0 ? "expired" : `in ${days}d`}</span>}
+    </span>
+  );
+}
+
+// "WHOIS" ampliado: datos de registro del dominio + reverse DNS + certificado SSL.
+function DomainDetailsCard({ whois, tls }) {
+  const w = whois || {};
+  const hasWhois = whois && Object.values(w).some((x) => x != null && x !== "" && !(Array.isArray(x) && !x.length));
+  if (!hasWhois && !tls) {
+    return <Card title="Domain Details"><p className="muted">No domain data.</p></Card>;
+  }
+
+  // Códigos EPP de estado: "clientDeleteProhibited https://…" → "clientDeleteProhibited".
+  const statusCodes = (w.status || []).map((s) => String(s).split(/\s+/)[0]).filter(Boolean);
+
+  return (
+    <Card title="WHOIS (Domain Details)">
+      <div className="scroll">
+        <OptRow k="Registrar" v={w.registrar} />
+        <OptRow k="Organization" v={w.org || w.registrant} />
+        <OptRow k="Country" v={w.country} />
+        <OptRow k="Created" v={w.creation_date ? prettyDate(w.creation_date) : null} />
+        <OptRow k="Updated" v={w.updated_date ? prettyDate(w.updated_date) : null} />
+        <OptRow k="Expires" v={w.expiration_date ? <DateWithCountdown iso={w.expiration_date} /> : null} />
+        <OptRow k="Age" v={w.domain_age_years != null ? w.domain_age_years + " years" : null} />
+        <OptRow k="Status" v={statusCodes.length ? <span className="mono dd-status">{statusCodes.join(", ")}</span> : null} />
+
+        {tls && <TlsSection tls={tls} />}
+      </div>
     </Card>
+  );
+}
+
+function TlsSection({ tls }) {
+  const [open, setOpen] = useState(false);
+  if (tls.valid === false) {
+    return (
+      <>
+        <div className="dd-subhead">SSL Certificate</div>
+        <OptRow k="Status" v={<span className="conf--low tls-bad">Invalid certificate</span>} />
+        <OptRow k="Reason" v={tls.error ? <span className="muted">{tls.error}</span> : null} />
+      </>
+    );
+  }
+  const sans = tls.san || [];
+  const days = tls.days_to_expiry;
+  // Nombre que cubre el cert para el resumen: el Common Name si existe; si no
+  // (certs modernos sin CN), el SAN wildcard *.dominio.tld, o el primer SAN.
+  const wildcard = sans.find((s) => s.startsWith("*."));
+  const certName = tls.subject_cn || wildcard || sans[0] || null;
+  const summary = [certName, days != null ? (days < 0 ? "expired" : `${days}d left`) : null]
+    .filter(Boolean).join(" · ");
+  return (
+    <>
+      <button className="dd-subhead-toggle" onClick={() => setOpen((v) => !v)} aria-expanded={open}>
+        <span className="dd-toggle-label">SSL Certificate</span>
+        <span className="dd-summary">{summary}</span>
+        <span className="dd-chevron">{open ? "▾" : "▸"}</span>
+      </button>
+      {open && (
+        <>
+          <OptRow k="Issuer" v={tls.issuer} />
+          <OptRow k="Common name" v={tls.subject_cn ? <span className="mono">{tls.subject_cn}</span> : null} />
+          <OptRow k="Valid until" v={tls.valid_to ? <DateWithCountdown iso={tls.valid_to} /> : null} />
+          <OptRow k="TLS version" v={tls.tls_version} />
+          <OptRow k="Domains (SAN)" v={sans.length ? <span title={sans.join(", ")}>{sans.length}</span> : null} />
+        </>
+      )}
+    </>
   );
 }
 
@@ -94,13 +246,17 @@ function splitEvidence(evidence) {
   return (evidence || "").split(";").map((e) => e.trim()).filter(Boolean);
 }
 
-function TechnologiesCard({ technologies }) {
+function TechnologiesCard({ technologies, security }) {
   // openName: evidencia abierta al hacer click en una tecnología (una a la vez).
   // expandAll: muestra TODAS las evidencias inline. La tarjeta NO crece: el
   //            contenido desborda dentro de .scroll (alto fijo) y hace scroll
   //            interno, así la grilla (DNS/WHOIS) no se deforma.
   const [openName, setOpenName] = useState(null);
   const [expandAll, setExpandAll] = useState(false);
+  // Nombres de tecnologías marcadas End-of-Life por la auditoría de seguridad.
+  const eolNames = new Set(
+    (security?.findings || []).filter((f) => f.category === "outdated").map((f) => f.tech)
+  );
 
   return (
     <Card title={`Technologies (${technologies.length})`}>
@@ -130,6 +286,7 @@ function TechnologiesCard({ technologies }) {
                   <div className="tech__name">
                     {t.name}
                     {t.version && <span className="tech__ver">v{t.version}</span>}
+                    {eolNames.has(t.name) && <span className="tech__eol" title="End-of-Life: versión sin soporte">EOL</span>}
                   </div>
                   <div className="tech__cat">{t.category}</div>
                 </div>
@@ -172,7 +329,9 @@ function GeoCard({ geo }) {
   );
 }
 
-function SummaryCard({ technologies }) {
+function SummaryCard({ technologies, security }) {
+  const [showFindings, setShowFindings] = useState(false);
+  const findings = security?.findings || [];
   return (
     <Card title="Summary">
       <div className="summary">
@@ -185,6 +344,33 @@ function SummaryCard({ technologies }) {
           <div className="stat__label">Avg confidence</div>
         </div>
       </div>
+
+      {security && (
+        <div className="sec">
+          <div className="sec__head">
+            <span className={"sec__grade sec__grade--" + security.grade}>{security.grade}</span>
+            <div>
+              <div className="sec__title-lbl">Security grade</div>
+              <div className="sec__sub">{findings.length} issue{findings.length !== 1 ? "s" : ""} found</div>
+            </div>
+            {findings.length > 0 && (
+              <button className="sec__toggle" onClick={() => setShowFindings((v) => !v)}>
+                {showFindings ? "Hide" : "Details"}
+              </button>
+            )}
+          </div>
+          {showFindings && (
+            <ul className="sec__list">
+              {findings.map((f, i) => (
+                <li key={i} className={"sec__item sec__item--" + f.severity}>
+                  <span className="sec__sev">{f.severity}</span>
+                  <span className="sec__ftitle" title={f.detail}>{f.title}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
     </Card>
   );
 }

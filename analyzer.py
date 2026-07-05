@@ -12,6 +12,7 @@ from urllib.parse import urljoin
 
 from core.js_fetcher import fetch_js_contents
 from core.signature_loader import SignatureLoader
+from core.security_auditor import audit as run_security_audit
 from config.constants import (
     DEFAULT_HEADERS, REQUEST_TIMEOUT, PROBE_TIMEOUT,
     IMPLIED_CONFIDENCE, PROBE_MAX_WORKERS,
@@ -21,6 +22,7 @@ from services.dns_service import DnsRecordService
 from services.geo_service import GeoService
 from services.whois_service import WhoisService
 from services.wayback_service import WaybackService
+from services.tls_service import TlsService
 
 logger = logging.getLogger("spynet.analyzer")
 
@@ -43,6 +45,7 @@ class Analyzer:  # patrón Facade
         self._geo     = GeoService()
         self._whois   = WhoisService()
         self._wayback = WaybackService()
+        self._tls     = TlsService()
         self._session = requests.Session()
         self._session.headers.update(DEFAULT_HEADERS)
         self._probe_paths = self._collect_probe_paths()
@@ -60,26 +63,41 @@ class Analyzer:  # patrón Facade
         # 1. Servicios de infraestructura (concurrentes) — CDNDetector reutiliza NS e IP.
         # Wayback es opcional: Compare lo excluye porque no usa el histórico y agrega
         # bastante latencia (comparar no necesita snapshots).
-        with ThreadPoolExecutor(max_workers=4) as executor:
+        with ThreadPoolExecutor(max_workers=6) as executor:
             future_dns    = executor.submit(self._dns.fetch_service, url)
             future_geo    = executor.submit(self._geo.fetch_service, url, depth_data)
             future_whois  = executor.submit(self._whois.fetch_service, url, depth_data)
+            future_tls    = executor.submit(self._tls.fetch_service, url)
+            future_email  = executor.submit(self._dns.email_security, url)
             future_wayback = executor.submit(self._wayback.fetch_service, url) if include_wayback else None
 
         dns_data   = future_dns.result()
         geo_data   = future_geo.result()
         whois_data = future_whois.result()
+        tls_data   = future_tls.result()
+        email_data = future_email.result()
         wayback    = future_wayback.result() if future_wayback else None
+
+        # PTR (reverse DNS) de la IP del servidor → va dentro del bloque geo.
+        server_ip = (geo_data or {}).get("ip", "")
+        if geo_data and server_ip:
+            geo_data["reverse_dns"] = self._dns.reverse_dns(server_ip)
 
         # 2. Petición HTTP principal al sitio
         page = self._fetch_page(url)
 
         # 3. Detección de tecnologías
         technologies = []
+        security = None
         if page:
-            ns_list   = (dns_data or {}).get("NS", [])
-            server_ip = (geo_data or {}).get("ip", "")
+            ns_list = (dns_data or {}).get("NS", [])
             technologies = self._run_detectors(page, url, ns_list, server_ip)
+            # 4. Auditoría de seguridad pasiva: postura ponderada (headers, cookies,
+            # versiones EOL, TLS y correo/DNS) — premia lo bueno, no solo castiga.
+            security = run_security_audit(
+                page["headers"], page.get("cookie_details"), technologies,
+                tls=tls_data, email=email_data,
+            )
         else:
             logger.warning("No page content retrieved for %s — skipping technology detection", url)
 
@@ -93,6 +111,9 @@ class Analyzer:  # patrón Facade
             "dns":          dns_data,
             "whois":        whois_data,
             "geo":          geo_data,
+            "tls":          tls_data,
+            "security":     security,
+            "email_security": email_data,
         }
         # La clave 'wayback' solo aparece si se ejecutó. Ausente = excluida a
         # propósito (no es un fallo); None = se intentó pero falló.
@@ -420,7 +441,8 @@ class Analyzer:  # patrón Facade
             )
             html    = response.text
             headers = dict(response.headers)
-            cookies = {c.name: c.value for c in response.cookies}
+            cookies = {c.name: c.value for c in response.cookies}          # nombres → detectores
+            cookie_details = self._cookie_details(response.cookies)        # flags → auditoría de seguridad
             soup    = self._make_soup(html)
             scripts = self._extract_scripts(soup, html)
             inline_scripts = self._extract_inline_scripts(soup)
@@ -430,11 +452,30 @@ class Analyzer:  # patrón Facade
             )
             return {
                 "html": html, "headers": headers, "cookies": cookies,
+                "cookie_details": cookie_details,
                 "scripts": scripts, "inline_scripts": inline_scripts, "soup": soup,
             }
         except Exception as exc:
             logger.error("Failed to fetch page %s: %s", url, exc)
             return None
+
+
+
+    def _cookie_details(self, jar) -> list[dict]:
+        """
+        Extrae los flags de seguridad de cada cookie (Secure, HttpOnly, SameSite)
+        del RequestsCookieJar, sin petición extra. Los usa la auditoría de seguridad.
+        """
+        details = []
+        for c in jar:
+            rest = {k.lower(): v for k, v in (getattr(c, "_rest", None) or {}).items()}
+            details.append({
+                "name":     c.name,
+                "secure":   bool(c.secure),
+                "httponly": "httponly" in rest,
+                "samesite": rest.get("samesite"),
+            })
+        return details
 
 
 

@@ -19,7 +19,7 @@ export default function DashboardView({ data, loading, error }) {
     <section>
       <header className="dash-head">
         <div>
-          <h2 className="dash-head__title">📊 Dashboard</h2>
+          <h2 className="dash-head__title">Dashboard</h2>
           <p className="dash-head__sub">Resumen de todos los análisis y tendencias detectadas por Spynet.</p>
         </div>
         <span className="dash-chip">All time</span>
