@@ -154,12 +154,25 @@ class TestAnalysesList:
 
 
 class TestAIAnalyses:
-    def test_create_ok(self, client):
-        resp = client.post("/api/v1/ai-analyses/", {"url": "example.com"}, format="json")
-        assert resp.status_code == 201
+    def test_create_ok(self, client, monkeypatch):
+        # Sin GEMINI_API_KEY → fallback local determinista (no llama a la red).
+        monkeypatch.delenv("GEMINI_API_KEY", raising=False)
+        resp = client.post("/api/v1/ai-analyses/", {
+            "question": "resume el análisis",
+            "analysis": {"domain": "example.com", "url": "https://example.com"},
+        }, format="json")
+        assert resp.status_code == 200
+        body = resp.json()
+        assert body["success"] is True
+        assert body["data"]["answer"]
+        assert body["data"]["provider"] == "local"
 
-    def test_missing_url(self, client):
-        resp = client.post("/api/v1/ai-analyses/", {}, format="json")
+    def test_missing_question(self, client):
+        resp = client.post("/api/v1/ai-analyses/", {"analysis": {"domain": "x"}}, format="json")
+        assert resp.status_code == 400
+
+    def test_missing_analysis(self, client):
+        resp = client.post("/api/v1/ai-analyses/", {"question": "hola"}, format="json")
         assert resp.status_code == 400
 
 

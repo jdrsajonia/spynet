@@ -3,11 +3,11 @@ import { call } from "../api";
 
 // Sugerencias rápidas que el usuario puede clickear para preguntar.
 const SUGGESTIONS = [
-  "Resume este análisis",
-  "¿Cómo mejoro esta página?",
-  "¿Qué riesgos debo priorizar?",
-  "Explícame las tecnologías detectadas",
-  "Dame un plan de acción rápido",
+  "Summarize this analysis",
+  "How do I improve this site?",
+  "What risks should I prioritize?",
+  "Explain the detected technologies",
+  "Give me a quick action plan",
 ];
 
 // ── Mini-renderer Markdown (sin dependencias) ────────────────────────────────
@@ -218,7 +218,7 @@ export default function AiChatPanel({ analysis }) {
         setError(errMsg);
       }
     } catch {
-      setError("No se pudo conectar con el backend.");
+      setError("Could not connect to the backend.");
     } finally {
       setLoading(false);
     }
@@ -244,7 +244,7 @@ export default function AiChatPanel({ analysis }) {
   }
 
   return (
-    <article className="ai-chat" id="ai-chat-panel">
+    <article className="card ai-chat" id="ai-chat-panel">
       <h3 className="ai-chat__title">
         <span className="ai-chat__icon">✦</span> AI Assistant
       </h3>
@@ -253,7 +253,7 @@ export default function AiChatPanel({ analysis }) {
       {messages.length === 0 && (
         <div className="ai-chat__welcome">
           <p className="ai-chat__welcome-text">
-            Pregunta lo que quieras sobre el análisis de <strong>{analysis.domain || analysis.url}</strong>
+            Ask anything about the analysis of <strong>{analysis.domain || analysis.url}</strong>
           </p>
           <div className="ai-chat__suggestions">
             {SUGGESTIONS.map((s) => (
@@ -278,7 +278,7 @@ export default function AiChatPanel({ analysis }) {
             className={`ai-chat__msg ai-chat__msg--${m.role}`}
           >
             <div className="ai-chat__msg-label">
-              {m.role === "user" ? "Tú" : "AI Assistant"}
+              {m.role === "user" ? "You" : "AI Assistant"}
               {m.provider && m.role === "assistant" && (
                 <span className={`ai-chat__provider${m.provider === "gemini" ? " ai-chat__provider--gemini" : ""}`}>
                   {providerLabel(m.provider)}
@@ -295,7 +295,7 @@ export default function AiChatPanel({ analysis }) {
             {/* Aviso discreto cuando no hay IA externa */}
             {m.role === "assistant" && isLocalProvider(m.provider) && (
               <div className="ai-chat__local-notice">
-                Respuesta generada sin IA externa configurada.
+                Generated without an external AI configured.
               </div>
             )}
           </div>
@@ -306,7 +306,7 @@ export default function AiChatPanel({ analysis }) {
           <div className="ai-chat__msg ai-chat__msg--assistant">
             <div className="ai-chat__msg-label">AI Assistant</div>
             <div className="ai-chat__loading">
-              <span className="ai-chat__loading-text">Analizando el contexto</span>
+              <span className="ai-chat__loading-text">Analyzing the context</span>
               <span className="ai-chat__dot" />
               <span className="ai-chat__dot" />
               <span className="ai-chat__dot" />
@@ -323,7 +323,7 @@ export default function AiChatPanel({ analysis }) {
         <input
           className="ai-chat__input"
           type="text"
-          placeholder="Pregunta sobre este análisis..."
+          placeholder="Ask about this analysis..."
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={handleKey}
@@ -336,7 +336,7 @@ export default function AiChatPanel({ analysis }) {
           disabled={!input.trim() || loading}
           id="ai-chat-send"
         >
-          {loading ? "..." : "Enviar"}
+          {loading ? "..." : "Send"}
         </button>
       </div>
     </article>

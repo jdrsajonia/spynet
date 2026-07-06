@@ -16,7 +16,7 @@ from api.serializers import (
     CompareUrlSerializer,
     SnapshotInputSerializer,
 )
-from api.ai_service import get_ai_response
+from api.ai_assistant import get_ai_response
 from api.utils.response import error_response, success_response
 
 STUB = {"message": "not implemented"}
@@ -159,6 +159,8 @@ class AnalysisCreateView(APIView):
 
 
 class AIAnalysisCreateView(APIView):
+    throttle_scope = "ai"  # protege la cuota/costo de la API de Gemini
+
     def post(self, request):
         question = (request.data.get("question") or "").strip()
         analysis = request.data.get("analysis")

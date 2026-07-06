@@ -90,5 +90,7 @@ REST_FRAMEWORK = {
         # Límite estricto para los endpoints que disparan análisis en vivo:
         # protege los servicios externos, sobre todo ip-api.com (45 req/min).
         "analyze": "10/min",
+        # Chat de IA: protege la cuota (y el costo) de la API de Gemini.
+        "ai": "15/min",
     },
 }
