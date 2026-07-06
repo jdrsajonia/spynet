@@ -16,7 +16,8 @@ from api.serializers import (
     CompareUrlSerializer,
     SnapshotInputSerializer,
 )
-from api.utils.response import success_response
+from api.ai_service import get_ai_response
+from api.utils.response import error_response, success_response
 
 STUB = {"message": "not implemented"}
 
@@ -159,9 +160,24 @@ class AnalysisCreateView(APIView):
 
 class AIAnalysisCreateView(APIView):
     def post(self, request):
-        serializer = AnalysisInputSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        return success_response(data=STUB, meta={"analysis_id": 1}, status_code=201)
+        question = (request.data.get("question") or "").strip()
+        analysis = request.data.get("analysis")
+        history = request.data.get("history", [])
+
+        if not question:
+            return error_response("MISSING_QUESTION", "question is required.", 400)
+        if not analysis or not isinstance(analysis, dict):
+            return error_response("MISSING_ANALYSIS", "analysis object is required.", 400)
+
+        try:
+            result = get_ai_response(question, analysis, history)
+        except Exception:
+            result = {
+                "answer": "Lo siento, ocurrió un error procesando tu pregunta. Intenta reformularla.",
+                "provider": "error",
+                "status": "error",
+            }
+        return success_response(data=result, status_code=200)
 
 
 class SnapshotAnalysisView(APIView):

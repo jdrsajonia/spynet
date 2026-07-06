@@ -1,4 +1,5 @@
 import { useState } from "react";
+import AiChatPanel from "../components/AiChatPanel";
 import MapEmbed from "../components/MapEmbed";
 import Scanning from "../components/Scanning";
 import { confClass, yearOf, prettyDate, avgConfidence, seconds, snapshotThumbUrl } from "../utils/format";
@@ -38,6 +39,8 @@ export default function AnalyseView({ data, loading, error, wayback, onRetryWayb
         <SummaryCard technologies={technologies} security={data.security} />
         <SnapshotsCard wayback={wayback} onRetry={onRetryWayback} onViewHistorical={onViewHistorical} />
       </div>
+
+      <AiChatPanel analysis={data} />
     </section>
   );
 }

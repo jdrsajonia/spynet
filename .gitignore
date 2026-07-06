@@ -38,3 +38,6 @@ build/
 
 # Caches
 .claude
+
+.env
+*.env.local
