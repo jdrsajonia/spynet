@@ -292,7 +292,7 @@ The frontend exposes this through several views: **Analyse**, **Historical**,
 - PostgreSQL (runs in a Docker container via `docker-compose.yml`)
 - React + Vite (frontend)
 - pytest (tests)
-
+- GitHub Actions (Continuous Integration)
 ---
 
 ## ✅ Tests
@@ -300,7 +300,16 @@ The frontend exposes this through several views: **Analyse**, **Historical**,
 ```bash
 pytest
 ```
+Continuous Integration:
+This project uses GitHub Actions for Continuous Integration (CI).
+On every push and pull request, GitHub automatically:
 
+- Sets up a Python 3.12 environment.
+- Starts a PostgreSQL service.
+- Installs project dependencies.
+- Applies Django database migrations.
+- Runs the complete test suite using pytest.
+This workflow helps detect issues early and ensures that every change is automatically validated before being merged into the main branch.
 ---
 
 ## 📌 Status
