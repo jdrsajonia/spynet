@@ -4,10 +4,10 @@ import { call } from "../api";
 // Sugerencias rápidas que el usuario puede clickear para preguntar.
 const SUGGESTIONS = [
   "Summarize this analysis",
-  "How do I improve this site?",
-  "What risks should I prioritize?",
-  "Explain the detected technologies",
-  "Give me a quick action plan",
+  "What technologies does this site use?",
+  "How secure is this site?",
+  "Where is this site hosted?",
+  "Is the SSL certificate valid?",
 ];
 
 // ── Mini-renderer Markdown (sin dependencias) ────────────────────────────────

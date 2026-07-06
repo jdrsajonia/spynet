@@ -128,17 +128,18 @@
 
 /* Scrollbar temática (delgada, azul sutil) que NO se dibuja encima del texto.
    Estilizarla la saca del modo "overlay" de Windows; el padding-right deja aire. */
-.scroll, .dns-txt__box, .sec__list, .ai-chat__messages {
+/* scrollbar temática compartida por todas las áreas scrollables de la app */
+.scroll, .dns-txt__box, .sec__list, .ai-chat__messages, .rad__body {
   scrollbar-width: thin;                                   /* Firefox */
   scrollbar-color: var(--panel-border) transparent;
 }
-.scroll::-webkit-scrollbar, .dns-txt__box::-webkit-scrollbar, .sec__list::-webkit-scrollbar, .ai-chat__messages::-webkit-scrollbar { width: 8px; }
-.scroll::-webkit-scrollbar-track, .dns-txt__box::-webkit-scrollbar-track, .sec__list::-webkit-scrollbar-track, .ai-chat__messages::-webkit-scrollbar-track { background: transparent; }
-.scroll::-webkit-scrollbar-thumb, .dns-txt__box::-webkit-scrollbar-thumb, .sec__list::-webkit-scrollbar-thumb, .ai-chat__messages::-webkit-scrollbar-thumb {
+.scroll::-webkit-scrollbar, .dns-txt__box::-webkit-scrollbar, .sec__list::-webkit-scrollbar, .ai-chat__messages::-webkit-scrollbar, .rad__body::-webkit-scrollbar { width: 8px; }
+.scroll::-webkit-scrollbar-track, .dns-txt__box::-webkit-scrollbar-track, .sec__list::-webkit-scrollbar-track, .ai-chat__messages::-webkit-scrollbar-track, .rad__body::-webkit-scrollbar-track { background: transparent; }
+.scroll::-webkit-scrollbar-thumb, .dns-txt__box::-webkit-scrollbar-thumb, .sec__list::-webkit-scrollbar-thumb, .ai-chat__messages::-webkit-scrollbar-thumb, .rad__body::-webkit-scrollbar-thumb {
   background: var(--panel-border); border-radius: 8px;
   border: 2px solid transparent; background-clip: content-box;
 }
-.scroll::-webkit-scrollbar-thumb:hover, .dns-txt__box::-webkit-scrollbar-thumb:hover, .sec__list::-webkit-scrollbar-thumb:hover, .ai-chat__messages::-webkit-scrollbar-thumb:hover {
+.scroll::-webkit-scrollbar-thumb:hover, .dns-txt__box::-webkit-scrollbar-thumb:hover, .sec__list::-webkit-scrollbar-thumb:hover, .ai-chat__messages::-webkit-scrollbar-thumb:hover, .rad__body::-webkit-scrollbar-thumb:hover {
   background: rgba(86, 124, 209, 0.45); background-clip: content-box;
 }
 
