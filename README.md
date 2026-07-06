@@ -143,6 +143,37 @@ infrastructure data and the `detectors/` for technologies, using the patterns in
 
 ---
 
+## 🤖 AI Assistant (Gemini)
+
+The **Analyse** view includes an AI chat assistant that answers questions about
+the scanned site. It uses Google Gemini when a key is configured, and falls back
+to a local rule-based engine otherwise.
+
+### Setup
+
+```bash
+# 1. Copy the example file (only once)
+copy .env.example .env          # Windows
+# cp .env.example .env          # Linux / macOS
+
+# 2. Edit .env and paste your own Gemini API key
+#    GEMINI_API_KEY=AIza...your-key...
+#    GEMINI_MODEL=gemini-2.5-flash
+```
+
+That's it. Django reads `.env` automatically on startup — no need to export
+variables manually. Restart the backend if it was already running.
+
+> ⚠️ **`.env` is git-ignored.** Never commit it. Each team member creates their
+> own `.env` with their own key. If the key is missing or invalid, the assistant
+> still works using the local fallback (`provider: "local"`).
+
+> 🔒 **The API key lives only in the backend.** It is never sent to the browser.
+> Do **not** add `GEMINI_API_KEY` to `frontend/.env` — that file is for public
+> variables like `VITE_API_BASE_URL` only.
+
+---
+
 ## 🌐 REST API
 
 Base URL: `http://127.0.0.1:8000/api/v1/`
@@ -159,11 +190,12 @@ Base URL: `http://127.0.0.1:8000/api/v1/`
 | `GET`  | `/analyses/compare/?a=1&b=2` | Compare two saved analyses by id |
 | `GET`  | `/domains/<name>/analyses/` | All analyses for a domain |
 | `GET`  | `/stats/` | Aggregated stats across stored analyses |
+| `POST` | `/ai-analyses/` | Ask the AI assistant about an analysis |
 
 > `POST /analyses/` runs a full live analysis and **persists** it, so it is then
 > retrievable via `GET /analyses/<id>/`, comparable via `/analyses/compare/`, and
 > aggregated in `/stats/`. `POST /analyses/historical/` is heavier: it downloads
-> and analyzes ~12 archived captures. The `ai-analyses/` endpoint is still a stub.
+> and analyzes ~12 archived captures.
 
 ### Example requests
 

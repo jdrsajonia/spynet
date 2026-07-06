@@ -3,6 +3,11 @@ from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+# Cargar variables desde .env (raíz del proyecto) antes de leer os.environ.
+# No sobrescribe variables ya definidas en el entorno del sistema.
+from config.env_loader import load_dotenv  # noqa: E402
+load_dotenv(BASE_DIR)
+
 SECRET_KEY = os.environ.get(
     "DJANGO_SECRET_KEY",
     "django-insecure-dev-key-change-me-in-production",
