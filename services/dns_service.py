@@ -21,7 +21,8 @@ class DnsRecordService(BaseServices):
                 "AAAA":[],
                 "CNAME":[],
                 "NS":[],
-                "MX":[]
+                "MX":[],
+                "TXT": []
             }
 
             for type_record in records.keys():
