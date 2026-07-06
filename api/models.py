@@ -35,6 +35,9 @@ class Analysis(models.Model):
     status       = models.CharField(max_length=20, choices=STATUS_CHOICES, default="completed")
     triggered_by = models.CharField(max_length=20, choices=TRIGGER_CHOICES, default="api")
     duration_ms  = models.PositiveIntegerField(null=True, blank=True)
+    tls          = models.JSONField(null=True, blank=True)   # certificado TLS/SSL (Domain details)
+    security     = models.JSONField(null=True, blank=True)   # auditoría de seguridad (nota + hallazgos)
+    email_security = models.JSONField(null=True, blank=True) # SPF / DMARC / DNSSEC (card DNS)
     analyzed_at  = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -57,6 +60,9 @@ class Analysis(models.Model):
             "dns":          _safe(lambda: self.dns_result.to_dict()),
             "whois":        _safe(lambda: self.whois_record.to_dict()),
             "geo":          _safe(lambda: self.geo_record.to_dict()),
+            "tls":          self.tls,
+            "security":     self.security,
+            "email_security": self.email_security,
             "wayback":      _safe(lambda: self.wayback_result.to_dict()),
             "errors":       [e.to_dict() for e in self.errors.all()],
             "tags":         {t.key: t.value for t in self.tags.all()},
@@ -72,12 +78,22 @@ class WhoisRecord(models.Model):
     updated_date     = models.DateTimeField(null=True, blank=True)
     domain_age_years = models.FloatField(null=True, blank=True)
     status_flags     = models.JSONField(null=True, blank=True)
+    org              = models.CharField(max_length=255, null=True, blank=True)
+    country          = models.CharField(max_length=100, null=True, blank=True)
+    emails           = models.JSONField(null=True, blank=True)
+    dnssec           = models.CharField(max_length=50, null=True, blank=True)
 
     def to_dict(self) -> dict:
         return {
             "registrar":        self.registrar,
             "registrant":       self.registrant,
+            "org":              self.org,
+            "country":          self.country,
+            "emails":           self.emails,
+            "dnssec":           self.dnssec,
+            "status":           self.status_flags,
             "creation_date":    self.creation_date.isoformat() if self.creation_date else None,
+            "updated_date":     self.updated_date.isoformat() if self.updated_date else None,
             "expiration_date":  self.expiration_date.isoformat() if self.expiration_date else None,
             "domain_age_years": self.domain_age_years,
         }
@@ -95,12 +111,14 @@ class GeoRecord(models.Model):
     latitude     = models.FloatField(null=True, blank=True)
     longitude    = models.FloatField(null=True, blank=True)
     asn          = models.CharField(max_length=100, null=True, blank=True)
+    reverse_dns  = models.CharField(max_length=255, null=True, blank=True)
 
     def to_dict(self) -> dict:
         return {
             "country": self.country, "city": self.city, "isp": self.isp,
             "org": self.org, "ip": self.ip_address,
             "lat": self.latitude, "lon": self.longitude,
+            "reverse_dns": self.reverse_dns,
         }
 
 

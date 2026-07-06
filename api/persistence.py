@@ -32,6 +32,8 @@ def persist_analysis(result: dict, *, triggered_by: str = "api", duration_ms: in
     analysis = Analysis.objects.create(
         domain=domain, source_url=result["url"],
         status=status, triggered_by=triggered_by, duration_ms=duration_ms,
+        tls=result.get("tls"), security=result.get("security"),
+        email_security=result.get("email_security"),
     )
 
     # Tecnologías en vivo → cuelgan del Analysis.
@@ -130,7 +132,13 @@ def _save_whois(analysis, whois):
         registrant=whois.get("registrant"),
         creation_date=_parse_dt(whois.get("creation_date")),
         expiration_date=_parse_dt(whois.get("expiration_date")),
+        updated_date=_parse_dt(whois.get("updated_date")),
         domain_age_years=whois.get("domain_age_years"),
+        status_flags=whois.get("status"),
+        org=whois.get("org"),
+        country=whois.get("country"),
+        emails=whois.get("emails"),
+        dnssec=whois.get("dnssec"),
     )
 
 
@@ -145,6 +153,7 @@ def _save_geo(analysis, geo):
         isp=geo.get("isp"), org=geo.get("org"),
         ip_address=geo.get("ip"), latitude=geo.get("lat"),
         longitude=geo.get("lon"), asn=geo.get("as"),
+        reverse_dns=geo.get("reverse_dns"),
     )
 
 

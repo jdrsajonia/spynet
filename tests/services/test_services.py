@@ -79,12 +79,15 @@ class TestDnsRecordService:
     def test_parses_records_and_skips_missing(self, monkeypatch):
         available = {"A": ["1.2.3.4"], "MX": ["10 mail.example.com"]}
 
-        def fake_resolve(domain, record_type):
+        # El servicio ahora resuelve con una instancia dns.resolver.Resolver
+        # (para usar un resolver público confiable), así que el mock va al método
+        # de la clase — la firma incluye self.
+        def fake_resolve(self, domain, record_type):
             if record_type in available:
                 return available[record_type]
             raise Exception("no records of this type")
 
-        monkeypatch.setattr("dns.resolver.resolve", fake_resolve)
+        monkeypatch.setattr("dns.resolver.Resolver.resolve", fake_resolve)
         records = DnsRecordService().get_dns_records("https://example.com")
         assert records["A"] == ["1.2.3.4"]
         assert records["MX"] == ["10 mail.example.com"]
