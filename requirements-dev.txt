@@ -2,4 +2,5 @@
 pytest>=8.0,<9
 pytest-mock>=3.12,<4
 pytest-django>=4.8,<5
+pytest-cov>=6.0,<7
 responses>=0.25,<1
