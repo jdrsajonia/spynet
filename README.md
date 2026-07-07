@@ -350,7 +350,9 @@ Continuous Integration is configured with GitHub Actions, which automatically ru
 
 Project under development for **Software Engineering II**.
 
-Preview available at: https://jdrsajonia.github.io
+Presentation available at: https://jdrsajonia.github.io
+
+Public site at: http://149.130.185.58
 
 ---
 
