@@ -89,20 +89,29 @@ VITE_API_BASE_URL=http://localhost:8000/api/v1
 ├── manage.py                # Django entry point
 ├── analyzer.py              # Facade: orchestrates services + detectors for one URL
 ├── cli.py                   # `spynet` command-line interface
-├── requirements.txt         # Python dependencies
+├── requirements.txt         # Python dependencies (runtime)
+├── requirements-dev.txt     # dev/test dependencies (pytest, linters)
+├── pyproject.toml           # tooling config (ruff, pytest, etc.)
 ├── docker-compose.yml       # PostgreSQL database container
+├── .env.example             # sample environment variables
 │
 ├── config/                  # Django project config
 │   ├── settings.py          #   DB connection, apps, CORS, throttling
 │   ├── urls.py              #   root URL routing
-│   └── constants.py         #   scoring constants (timeouts, caps, weights)
+│   ├── constants.py         #   scoring constants (timeouts, caps, weights)
+│   ├── env_loader.py        #   loads/validates environment variables
+│   ├── logging_config.py    #   logging setup
+│   ├── asgi.py / wsgi.py    #   ASGI/WSGI entrypoints
 │
 ├── api/                     # REST API (Django app)
 │   ├── models.py            #   ORM models = DB tables (Domain, Analysis, Technology…)
 │   ├── views.py             #   endpoint logic
 │   ├── urls.py              #   /api/v1/... routes
 │   ├── persistence.py       #   saves analyzer results into the DB
-│   ├── serializers.py       #   request validation
+│   ├── ai_assistant.py      #   AI chat assistant for the Analyse panel (Gemini + fallback)
+│   ├── apps.py              #   Django app config
+│   ├── serializers/         #   request/response validation (analysis, compare, snapshot)
+│   ├── utils/               #   response envelope, error codes, exception handler
 │   └── migrations/          #   DB schema history (applied by `migrate`)
 │
 ├── detectors/               # Technology detection (Strategy pattern)
@@ -117,22 +126,29 @@ VITE_API_BASE_URL=http://localhost:8000/api/v1
 ├── core/
 │   ├── signatures.json      # the pattern database (all technologies + weights)
 │   ├── signature_loader.py  #   loads signatures once (Singleton)
-│   └── js_fetcher.py        #   downloads JS bundles for deeper detection
+│   ├── js_fetcher.py        #   downloads JS bundles for deeper detection
+│   └── security_auditor.py  #   passive security posture grade (A–F) from captured data
 │
 ├── services/                # External-data services (each decoupled)
+│   ├── base_services.py      #   abstract base (fetch_service contract)
 │   ├── dns_service.py        #   DNS records
 │   ├── whois_service.py      #   WHOIS
 │   ├── geo_service.py        #   IP geolocation
+│   ├── tls_service.py        #   TLS/certificate inspection
 │   └── wayback_service.py    #   Wayback Machine snapshots
 │
 ├── frontend/                # React + Vite SPA
 │   └── src/
 │       ├── views/            #   Analyse, Historical, Dashboard, Compare, API Tester
-│       ├── components/       #   Sidebar, Topbar, charts…
+│       ├── components/       #   Sidebar, Topbar, AiChatPanel, MapEmbed, charts/…
 │       ├── styles/           #   design tokens + per-view CSS
+│       ├── utils/            #   categories + formatting helpers
 │       └── api.js            #   single layer that talks to the backend
 │
-└── tests/                   # pytest suite (detectors, services, API)
+├── tests/                   # pytest suite (api, detectors, services, AI, security)
+│
+├── docs/                    # workshops, UML class diagram
+└── assets/                  # logos & architecture diagram
 ```
 
 **How the pieces connect:** `analyzer.py` (Facade) runs the `services/` for
