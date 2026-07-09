@@ -14,6 +14,7 @@ _STATUS_CODE_MAP = {
     400: error_codes.VALIDATION_ERROR,
     404: error_codes.NOT_FOUND,
     405: error_codes.METHOD_NOT_ALLOWED,
+    429: error_codes.RATE_LIMITED,
     502: error_codes.EXTERNAL_SERVICE_ERROR,
 }
 

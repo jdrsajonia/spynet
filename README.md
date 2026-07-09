@@ -139,7 +139,7 @@ VITE_API_BASE_URL=http://localhost:8000/api/v1
 │
 ├── frontend/                # React + Vite SPA
 │   └── src/
-│       ├── views/            #   Analyse, Historical, Dashboard, Compare, API Tester
+│       ├── views/            #   Analyse, Historical, Dashboard, Compare, API Docs
 │       ├── components/       #   Sidebar, Topbar, AiChatPanel, MapEmbed, charts/…
 │       ├── styles/           #   design tokens + per-view CSS
 │       ├── utils/            #   categories + formatting helpers
@@ -193,6 +193,89 @@ variables manually. Restart the backend if it was already running.
 ## 🌐 REST API
 
 Base URL: `http://127.0.0.1:8000/api/v1/`
+
+### Interactive documentation
+
+The API describes itself. The **API Docs** view in the frontend reads the OpenAPI
+document and renders it in SpyNet's own design, with a *Try it* form per endpoint —
+that is the one to use day to day. The backend also serves the standard renderings:
+
+| URL | What it is |
+|-----|-----------|
+| [`/api/v1/docs/`](http://127.0.0.1:8000/api/v1/docs/) | **Swagger UI** — every endpoint, its parameters, its response schema, and a *Try it out* button |
+| [`/api/v1/redoc/`](http://127.0.0.1:8000/api/v1/redoc/) | Redoc — the same thing, laid out for reading |
+| [`/api/v1/schema/`](http://127.0.0.1:8000/api/v1/schema/) | The raw OpenAPI 3 document, to generate clients from |
+
+It is generated from the views and serializers by
+[drf-spectacular](https://drf-spectacular.readthedocs.io/), so it cannot drift from
+the code. Add an endpoint and it shows up; change a field and the schema changes.
+Regenerate the document to a file with:
+
+```bash
+python manage.py spectacular --file schema.yaml
+```
+
+### Authentication
+
+There is none. The API is public and every endpoint is anonymous.
+
+### Response envelope
+
+**Every** response — success or failure — has the same four keys. The payload
+documented for each endpoint is what you find under `data`:
+
+```json
+{ "success": true, "data": { "id": 1, "domain": "github.com" }, "error": null, "meta": { "analysis_id": 1 } }
+```
+
+On failure `data` is `null` and `error` carries the code and a human-readable message:
+
+```json
+{ "success": false, "data": null, "error": { "code": "VALIDATION_ERROR", "message": "Enter a valid URL." }, "meta": { "fields": { "url": ["Enter a valid URL."] } } }
+```
+
+`meta` is endpoint-specific: page counters on the list endpoint, `analysis_id` on the
+ones that persist an analysis, `fields` on validation errors.
+
+### Error codes
+
+| `error.code` | HTTP | When |
+|--------------|------|------|
+| `VALIDATION_ERROR` | 400 | The body or query string failed validation. `meta.fields` details each field. |
+| `MISSING_QUESTION` | 400 | `POST /ai-analyses/` without a `question`. |
+| `MISSING_ANALYSIS` | 400 | `POST /ai-analyses/` without an `analysis` object. |
+| `NOT_FOUND` | 404 | No such analysis, domain, or Wayback capture. |
+| `METHOD_NOT_ALLOWED` | 405 | The endpoint does not accept that HTTP method. |
+| `RATE_LIMITED` | 429 | You exceeded a rate limit (see below). Back off and retry. |
+| `EXTERNAL_SERVICE_ERROR` | 502 | An upstream service (Wayback, `ip-api.com`, WHOIS…) failed or timed out. |
+| `INTERNAL_ERROR` | 500 | Unexpected server-side failure. |
+
+### Rate limits
+
+Per IP address. Exceeding any of them returns `429 RATE_LIMITED`.
+
+| Scope | Limit | Applies to |
+|-------|-------|-----------|
+| general | 60/min | every endpoint |
+| `analyze` | 10/min | the endpoints that run a live analysis: `POST /analyses/`, `/analyses/snapshot/`, `/analyses/historical/`, `/analyses/<id>/wayback/`, `POST /analyses/compare/` |
+| `ai` | 15/min | `POST /ai-analyses/` |
+
+### Pagination
+
+`GET /analyses/` takes `?page=` (1-based, default `1`) and `?page_size=` (default `20`,
+capped at `100`). The counters come back in `meta`:
+
+```json
+{ "meta": { "page": 2, "pages": 7, "total": 134, "page_size": 20 } }
+```
+
+### CORS
+
+The browser can only call the API from an allowed origin. Defaults to the Vite and CRA
+dev servers (`:5173`, `:3000` on both `localhost` and `127.0.0.1`); override with the
+`DJANGO_CORS_ORIGINS` environment variable (comma-separated).
+
+### Endpoints
 
 | Method | URL | Description |
 |--------|-----|-------------|
@@ -330,7 +413,7 @@ Given a domain, Spynet retrieves:
 - 📅 Historical snapshots and the technology stack of each (Wayback Machine)
 
 The frontend exposes this through several views: **Analyse**, **Historical**,
-**Dashboard**, **Compare**, and a raw **API Tester**.
+**Dashboard**, **Compare**, and **API Docs**.
 
 ---
 

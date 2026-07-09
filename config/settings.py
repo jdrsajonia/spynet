@@ -22,6 +22,7 @@ ALLOWED_HOSTS = os.environ.get(
 INSTALLED_APPS = [
     "corsheaders",
     "rest_framework",
+    "drf_spectacular",
     "api",
 ]
 
@@ -71,6 +72,7 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 REST_FRAMEWORK = {
     "EXCEPTION_HANDLER": "api.utils.exception_handler.custom_exception_handler",
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
     "DEFAULT_RENDERER_CLASSES": [
         "rest_framework.renderers.JSONRenderer",
     ],
@@ -93,4 +95,34 @@ REST_FRAMEWORK = {
         # Chat de IA: protege la cuota (y el costo) de la API de Gemini.
         "ai": "15/min",
     },
+}
+
+SPECTACULAR_SETTINGS = {
+    "TITLE": "SpyNet API",
+    "DESCRIPTION": (
+        "Detects the technology stack of a website, live or from Wayback Machine "
+        "snapshots, and stores the results for comparison and aggregate stats.\n\n"
+        "**Every response is wrapped in an envelope** — the payload documented for "
+        "each endpoint is what you find under `data`:\n\n"
+        "```json\n"
+        '{"success": true, "data": {...}, "error": null, "meta": {}}\n'
+        "```\n\n"
+        "On failure, `data` is `null` and `error` holds `{code, message}`. See the "
+        "`ErrorResponse` schema for the list of `code` values.\n\n"
+        "The API is public: no authentication is required. It is rate limited per IP "
+        "(60/min overall, 10/min for the endpoints that run a live analysis, "
+        "15/min for the AI assistant). Exceeding a limit returns `429 RATE_LIMITED`."
+    ),
+    "VERSION": "1.0.0",
+    "SERVE_INCLUDE_SCHEMA": False,  # no documentar el endpoint del propio esquema
+    "SCHEMA_PATH_PREFIX": "/api/v1",
+    # Sin esto, cada enum arrastra una descripción que repite sus propios valores
+    # ("* `completed` - completed…"). El tipo del campo ya los muestra.
+    "ENUM_GENERATE_CHOICE_DESCRIPTION": False,
+    "TAGS": [
+        {"name": "analyses", "description": "Run and retrieve technology analyses."},
+        {"name": "domains", "description": "History of analyses per domain."},
+        {"name": "stats", "description": "Aggregate metrics across stored analyses."},
+        {"name": "ai", "description": "AI assistant over an analysis result."},
+    ],
 }

@@ -17,7 +17,4 @@ export const Icon = {
   apidocs: (
     <svg className="nav__icon" {...base}><path d="M8 6l-5 6 5 6" /><path d="M16 6l5 6-5 6" /></svg>
   ),
-  tester: (
-    <svg className="nav__icon" {...base}><rect x="3" y="4" width="18" height="16" rx="2" /><path d="M7 9l3 3-3 3" /><path d="M13 15h4" /></svg>
-  ),
 };

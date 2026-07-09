@@ -7,8 +7,8 @@ import AnalyseView from "./views/AnalyseView";
 import CompareView from "./views/CompareView";
 import DashboardView from "./views/DashboardView";
 import HistoricalView from "./views/HistoricalView";
-import ApiTesterView from "./views/ApiTesterView";
-import { call } from "./api";
+import ApiDocsView from "./views/ApiDocsView";
+import { call, fetchSchema } from "./api";
 
 import "./styles/tokens.css";
 import "./styles/layout.css";
@@ -16,6 +16,7 @@ import "./styles/analyse.css";
 import "./styles/compare.css";
 import "./styles/dashboard.css";
 import "./styles/historical.css";
+import "./styles/apidocs.css";
 
 // El contenedor: aquí vive el ESTADO y la LÓGICA (qué se pide al backend). Las
 // vistas y el shell son presentacionales y solo reciben props. Esto mantiene la
@@ -25,8 +26,7 @@ const NAV = [
   { key: "historical", label: "Historical", icon: Icon.historical },
   { key: "dashboard",  label: "Dashboard",  icon: Icon.dashboard },
   { key: "compare",    label: "Compare",    icon: Icon.compare },
-  { key: "apidocs",    label: "API Docs",   icon: Icon.apidocs,    disabled: true },
-  { key: "tester",     label: "API Tester", icon: Icon.tester },
+  { key: "apidocs",    label: "API Docs",   icon: Icon.apidocs },
 ];
 
 export default function App() {
@@ -44,6 +44,12 @@ export default function App() {
   const [dashData, setDashData] = useState(null);
   const [dashLoading, setDashLoading] = useState(false);
   const [dashError, setDashError] = useState(null);
+
+  // Documento OpenAPI que describe la API. Se pide una sola vez y se queda en
+  // memoria: no cambia mientras el backend no se reinicie.
+  const [schema, setSchema] = useState(null);
+  const [schemaLoading, setSchemaLoading] = useState(false);
+  const [schemaError, setSchemaError] = useState(null);
 
   // Historical: análisis pasivo de todas las capturas de Wayback (solo tecnologías).
   const [histUrl, setHistUrl] = useState("");
@@ -78,6 +84,22 @@ export default function App() {
       }
     })();
   }, [view, dashData, dashLoading]);
+
+  // Igual que el dashboard: se carga al entrar a la pestaña, no al arrancar.
+  useEffect(() => {
+    if (view !== "apidocs" || schema || schemaLoading) return;
+    (async () => {
+      setSchemaLoading(true);
+      setSchemaError(null);
+      try {
+        setSchema(await fetchSchema());
+      } catch {
+        setSchemaError("No se pudo cargar el esquema (¿el backend está corriendo en :8000?).");
+      } finally {
+        setSchemaLoading(false);
+      }
+    })();
+  }, [view, schema, schemaLoading]);
 
   async function runAnalyze(url) {
     if (!url.trim()) return;
@@ -218,8 +240,10 @@ export default function App() {
           {view === "dashboard" && (
             <DashboardView data={dashData} loading={dashLoading} error={dashError} />
           )}
-          {view === "tester" && <ApiTesterView />}
-          {!["analyse", "historical", "compare", "dashboard", "tester"].includes(view) && (
+          {view === "apidocs" && (
+            <ApiDocsView schema={schema} loading={schemaLoading} error={schemaError} />
+          )}
+          {!["analyse", "historical", "compare", "dashboard", "apidocs"].includes(view) && (
             <div className="placeholder">— vista «{view}» pendiente —</div>
           )}
         </main>

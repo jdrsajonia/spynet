@@ -22,4 +22,14 @@ export async function call(path, options = {}) {
   return { status: res.status, body };
 }
 
+/**
+ * Documento OpenAPI del backend. Es la fuente de verdad de la vista API Docs:
+ * lo genera drf-spectacular desde las vistas, así que no puede desactualizarse.
+ */
+export async function fetchSchema() {
+  const res = await fetch(`${BASE}/schema/?format=json`);
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return res.json();
+}
+
 export const API_BASE = BASE;
