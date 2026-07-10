@@ -9,16 +9,101 @@ geolocation, and how all of it has evolved over time via the Wayback Machine.
 
 ---
 
-## 🚀 Quick Start
+## 📋 Table of Contents
+
+- [✨ Features](#-features)
+- [🛠️ Tech Stack](#-tech-stack)
+- [🚀 Getting Started](#-getting-started)
+  - [Option A — Full stack with Docker Compose](#option-a--full-stack-with-docker-compose)
+  - [Option B — Manual setup (mirrors production)](#option-b--manual-setup-mirrors-production)
+  - [AI Assistant (Gemini)](#ai-assistant-gemini)
+- [🗂️ Project Structure](#-project-structure)
+- [🌐 REST API](#-rest-api)
+- [💻 CLI](#-cli)
+- [🧬 How detection works (scoring model)](#-how-detection-works-scoring-model)
+- [✅ Tests](#-tests)
+- [📌 Status](#-status)
+
+---
+
+## ✨ Features
+
+Given a domain, Spynet retrieves:
+
+- 🧩 **Technologies** — frontend, backend, server, CDN, analytics (with version when detectable)
+- 🌐 **Domain information** (WHOIS)
+- 📡 **DNS records** (all IPs, nameservers, MX)
+- 📍 **IP geolocation**
+- 🔒 **Passive security posture** — a graded (A–F) audit from the captured data
+- 📅 **Historical snapshots** and the technology stack of each (Wayback Machine)
+- 🤖 **AI assistant** — ask questions about a scanned site (Google Gemini, with a local fallback)
+
+The frontend exposes all of this through several views: **Home**, **Analyse**,
+**Historical**, **Dashboard**, **Compare**, and **API Docs**.
+
+---
+
+## 🛠️ Tech Stack
+
+- **Backend:** Python / Django + Django REST Framework
+- **Database:** PostgreSQL (runs in a Docker container via `docker-compose.yml`)
+- **Frontend:** React + Vite
+- **Tests:** pytest
+- **CI:** GitHub Actions (runs the suite on every push and pull request)
+
+> **Deployment note.** The public site runs a **hybrid** setup: Django via
+> gunicorn/systemd, the frontend served by nginx, and PostgreSQL in Docker. The
+> fully-containerized flow below (Option A) is meant for **local development**.
+
+---
+
+## 🚀 Getting Started
 
 The project has two parts that run together: a **Django backend** (REST API) and a
-**React + Vite frontend**. Start the backend first, then the frontend.
+**React + Vite frontend**. You can bring everything up with a single Docker Compose
+command (**Option A**), or run each part by hand (**Option B**).
 
-### 1. Backend (Django API)
+**Prerequisite for both:** [Docker](https://www.docker.com/products/docker-desktop/)
+— the database always runs in a container.
 
-**Prerequisite:** the database runs on **PostgreSQL inside a Docker container**
-(see `docker-compose.yml`), so you need **Docker** installed
-([Docker Desktop](https://www.docker.com/products/docker-desktop/) on Windows/macOS).
+### Option A — Full stack with Docker Compose
+
+The quickest way to get a working environment: one command builds and starts the
+database, the backend, and the frontend together.
+
+```bash
+# 1. Create your .env (the backend container reads it — the file must exist
+#    even if you don't set a Gemini key yet)
+cp .env.example .env          # Linux / macOS
+# copy .env.example .env      # Windows (PowerShell)
+
+# 2. Build and start everything (db + backend + frontend), in the background
+docker compose up -d
+```
+
+That's it. Docker starts three services:
+
+| Service | Container | URL |
+|---------|-----------|-----|
+| Frontend (Vite) | `spynet_frontend` | http://localhost:5173 |
+| Backend (Django) | `spynet_backend` | http://localhost:8000/api/v1/ |
+| Database (Postgres) | `spynet_postgres_db` | `localhost:5432` |
+
+The backend container **runs migrations automatically** on start, so the schema is
+ready without extra steps. Useful commands: `docker compose ps` (status),
+`docker compose logs -f` (live logs), `docker compose down` (stop and remove the
+containers; the database volume survives).
+
+> ℹ️ This mode is for **local development** only. For the production layout see the
+> deployment note above.
+
+### Option B — Manual setup (mirrors production)
+
+Run each part yourself, with only PostgreSQL in Docker. This mirrors how the
+project runs in production (Python process + separate frontend + Postgres
+container), which makes it the better choice when you're debugging deployment.
+
+#### 1. Backend (Django API)
 
 From the project root:
 
@@ -33,8 +118,8 @@ source .venv/bin/activate
 # 2. Install dependencies
 pip install -r requirements.txt
 
-# 3. Start the PostgreSQL database (Docker container, runs in the background)
-docker compose up -d
+# 3. Start ONLY the PostgreSQL database (Docker container, in the background)
+docker compose up -d db
 
 # 4. Create the tables inside PostgreSQL
 python manage.py migrate
@@ -45,19 +130,22 @@ python manage.py runserver
 
 The API is now live at **`http://127.0.0.1:8000/`**.
 
-> 🐘 **The database lives in Docker.** `docker compose up -d` starts a PostgreSQL
+> 🐘 **The database lives in Docker.** `docker compose up -d db` starts a PostgreSQL
 > container (`spynet_postgres_db`, listening on `localhost:5432`) whose data
-> persists in a Docker volume. Django connects to it via the `DATABASES` block in
+> persists in a Docker volume. Naming the `db` service explicitly is deliberate:
+> a bare `docker compose up -d` would also start the `backend` and `frontend`
+> containers (that's Option A). Django connects via the `DATABASES` block in
 > `config/settings.py`. **Postgres must be running before `migrate`** — otherwise
-> the connection is refused. Useful commands: `docker compose ps` (status),
-> `docker compose logs -f` (logs), `docker compose stop` (pause without deleting
-> data), `docker compose down` (remove the container; the data volume survives).
+> the connection is refused. Useful: `docker compose ps` (status),
+> `docker compose logs -f db` (logs), `docker compose stop db` (pause without
+> deleting data), `docker compose down` (remove the container; the data volume
+> survives).
 
 > ⚠️ **Don't skip `migrate`.** The database starts **empty** — each clone builds
 > its own schema. Without `migrate` the first scan fails with
 > `no such table: api_domain`.
 
-### 2. Frontend (React + Vite)
+#### 2. Frontend (React + Vite)
 
 In a **second terminal**, with the backend still running:
 
@@ -80,9 +168,39 @@ VITE_API_BASE_URL=http://localhost:8000/api/v1
 > heavy domains like `google.com` can take a while. Use `example.com` for quick
 > tests.
 
+### AI Assistant (Gemini)
+
+The **Analyse** view includes an AI chat assistant that answers questions about
+the scanned site. It uses Google Gemini when a key is configured, and falls back
+to a local rule-based engine otherwise — so it works either way.
+
+```bash
+# 1. Copy the example file (only once)
+copy .env.example .env          # Windows
+# cp .env.example .env          # Linux / macOS
+
+# 2. Edit .env and paste your own Gemini API key
+#    GEMINI_API_KEY=AIza...your-key...
+#    GEMINI_MODEL=gemini-2.5-flash
+```
+
+Django reads `.env` automatically on startup — no need to export variables
+manually. Restart the backend if it was already running.
+
+> ⚠️ **`.env` is git-ignored.** Never commit it. Each team member creates their
+> own `.env` with their own key. If the key is missing or invalid, the assistant
+> still works using the local fallback (`provider: "local"`).
+
+> 🔒 **The API key lives only in the backend.** It is never sent to the browser.
+> Do **not** add `GEMINI_API_KEY` to `frontend/.env` — that file is for public
+> variables like `VITE_API_BASE_URL` only.
+
 ---
 
 ## 🗂️ Project Structure
+
+<details>
+<summary>Full directory tree</summary>
 
 ```
 .
@@ -92,7 +210,8 @@ VITE_API_BASE_URL=http://localhost:8000/api/v1
 ├── requirements.txt         # Python dependencies (runtime)
 ├── requirements-dev.txt     # dev/test dependencies (pytest, linters)
 ├── pyproject.toml           # tooling config (ruff, pytest, etc.)
-├── docker-compose.yml       # PostgreSQL database container
+├── docker-compose.yml       # PostgreSQL database + (dev) backend/frontend containers
+├── Dockerfile.backend       # backend image (Option A)
 ├── .env.example             # sample environment variables
 │
 ├── config/                  # Django project config
@@ -107,6 +226,7 @@ VITE_API_BASE_URL=http://localhost:8000/api/v1
 │   ├── models.py            #   ORM models = DB tables (Domain, Analysis, Technology…)
 │   ├── views.py             #   endpoint logic
 │   ├── urls.py              #   /api/v1/... routes
+│   ├── admin.py             #   Django admin registration
 │   ├── persistence.py       #   saves analyzer results into the DB
 │   ├── ai_assistant.py      #   AI chat assistant for the Analyse panel (Gemini + fallback)
 │   ├── apps.py              #   Django app config
@@ -138,8 +258,9 @@ VITE_API_BASE_URL=http://localhost:8000/api/v1
 │   └── wayback_service.py    #   Wayback Machine snapshots
 │
 ├── frontend/                # React + Vite SPA
+│   ├── Dockerfile.front      #   frontend image (Option A)
 │   └── src/
-│       ├── views/            #   Analyse, Historical, Dashboard, Compare, API Docs
+│       ├── views/            #   Home, Analyse, Historical, Dashboard, Compare, API Docs
 │       ├── components/       #   Sidebar, Topbar, AiChatPanel, MapEmbed, charts/…
 │       ├── styles/           #   design tokens + per-view CSS
 │       ├── utils/            #   categories + formatting helpers
@@ -151,6 +272,8 @@ VITE_API_BASE_URL=http://localhost:8000/api/v1
 └── assets/                  # logos & architecture diagram
 ```
 
+</details>
+
 **How the pieces connect:** `analyzer.py` (Facade) runs the `services/` for
 infrastructure data and the `detectors/` for technologies, using the patterns in
 `core/signatures.json`. `api/views.py` exposes that over HTTP and
@@ -159,42 +282,9 @@ infrastructure data and the `detectors/` for technologies, using the patterns in
 
 ---
 
-## 🤖 AI Assistant (Gemini)
-
-The **Analyse** view includes an AI chat assistant that answers questions about
-the scanned site. It uses Google Gemini when a key is configured, and falls back
-to a local rule-based engine otherwise.
-
-### Setup
-
-```bash
-# 1. Copy the example file (only once)
-copy .env.example .env          # Windows
-# cp .env.example .env          # Linux / macOS
-
-# 2. Edit .env and paste your own Gemini API key
-#    GEMINI_API_KEY=AIza...your-key...
-#    GEMINI_MODEL=gemini-2.5-flash
-```
-
-That's it. Django reads `.env` automatically on startup — no need to export
-variables manually. Restart the backend if it was already running.
-
-> ⚠️ **`.env` is git-ignored.** Never commit it. Each team member creates their
-> own `.env` with their own key. If the key is missing or invalid, the assistant
-> still works using the local fallback (`provider: "local"`).
-
-> 🔒 **The API key lives only in the backend.** It is never sent to the browser.
-> Do **not** add `GEMINI_API_KEY` to `frontend/.env` — that file is for public
-> variables like `VITE_API_BASE_URL` only.
-
----
-
 ## 🌐 REST API
 
 Base URL: `http://127.0.0.1:8000/api/v1/`
-
-### Interactive documentation
 
 The API describes itself. The **API Docs** view in the frontend reads the OpenAPI
 document and renders it in SpyNet's own design, with a *Try it* form per endpoint —
@@ -209,7 +299,11 @@ that is the one to use day to day. The backend also serves the standard renderin
 It is generated from the views and serializers by
 [drf-spectacular](https://drf-spectacular.readthedocs.io/), so it cannot drift from
 the code. Add an endpoint and it shows up; change a field and the schema changes.
-Regenerate the document to a file with:
+
+<details>
+<summary>Full API reference — envelope, error codes, rate limits, endpoints, examples</summary>
+
+Regenerate the OpenAPI document to a file with:
 
 ```bash
 python manage.py spectacular --file schema.yaml
@@ -328,6 +422,8 @@ Content-Type: application/json
 GET http://127.0.0.1:8000/api/v1/analyses/1/
 ```
 
+</details>
+
 ---
 
 ## 💻 CLI
@@ -363,6 +459,9 @@ into categories (HTML, script `src`, headers, cookies, downloaded JS, static
 resources, DNS/IP for CDNs). A `DetectorFactory` builds one detector per category
 (`frontend`, `backend`, `cdn`, `server`, `analytics`) following the **Strategy**
 pattern.
+
+<details>
+<summary>Weighted scoring and robustness rules</summary>
 
 ### Weighted scoring
 
@@ -400,35 +499,12 @@ opposite, in fact. Two rules keep it accurate:
 > number of signatures. Every false positive we found during validation was a
 > non-discriminant pattern, never a missing one.
 
----
+</details>
 
-## ⚙️ What does it analyze?
-
-Given a domain, Spynet retrieves:
-
-- 🧩 Technologies — frontend, backend, server, CDN, analytics (with version when detectable)
-- 🌐 Domain information (WHOIS)
-- 📡 DNS records (all IPs, nameservers, MX)
-- 📍 IP geolocation
-- 📅 Historical snapshots and the technology stack of each (Wayback Machine)
-
-The frontend exposes this through several views: **Analyse**, **Historical**,
-**Dashboard**, **Compare**, and **API Docs**.
-
----
-
-## 🛠️ Stack
-
-- Python / Django + Django REST Framework
-- PostgreSQL (runs in a Docker container via `docker-compose.yml`)
-- React + Vite (frontend)
-- pytest (tests)
-- GitHub Actions (Continuous Integration)
 ---
 
 ## ✅ Tests
 
---- 
 Run the test suite locally:
 
 ```bash
@@ -441,7 +517,8 @@ To measure test coverage:
 pytest --cov=. --cov-report=term-missing
 ```
 
-Continuous Integration is configured with GitHub Actions, which automatically runs the test suite on every push and pull request.
+Continuous Integration is configured with GitHub Actions, which automatically runs
+the test suite on every push and pull request.
 
 ---
 
