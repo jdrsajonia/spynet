@@ -45,7 +45,7 @@ export default function ApiDocsView({ schema, loading, error }) {
       .filter((g) => g.items.length > 0);
   }, [groups, query]);
 
-  if (loading) return <div className="placeholder">Cargando el esquema de la API…</div>;
+  if (loading) return <div className="placeholder">Loading the API scheme…</div>;
   if (error) return <div className="error">{error}</div>;
   if (!schema) return null;
 
@@ -56,7 +56,7 @@ export default function ApiDocsView({ schema, loading, error }) {
       <header className="view-head">
         <h2 className="view-head__title">{schema.info.title}</h2>
         <p className="view-head__meta">
-          v{schema.info.version} · <code>{API_BASE}</code> · generado desde el backend
+          v{schema.info.version} · <code>{API_BASE}</code> · Generated from backend
         </p>
       </header>
 
@@ -92,7 +92,7 @@ export default function ApiDocsView({ schema, loading, error }) {
               ))}
             </div>
           ))}
-          {filtered.length === 0 && <p className="muted">Ningún endpoint coincide.</p>}
+          {filtered.length === 0 && <p className="muted">No endpoint matches.</p>}
         </aside>
 
         <div className="docs__main">
@@ -307,7 +307,7 @@ function TryIt({ op, root, pathParams, queryParams, bodyFields }) {
   return (
     <article className="card">
       <h3 className="card__title"><span className="dot" /> Try it</h3>
-      {inputs.length === 0 && <p className="muted">Este endpoint no necesita parámetros.</p>}
+      {inputs.length === 0 && <p className="muted">This endpoint does not require parameters.</p>}
 
       {inputs.map((f) => (
         <label className="docs__input-row" key={`${f.where}:${f.name}`}>

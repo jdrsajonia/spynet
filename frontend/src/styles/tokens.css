@@ -9,6 +9,7 @@
   --bg-1:          #0c1322;
   --panel:         rgba(18, 26, 46, 0.72);
   --panel-border:  rgba(86, 124, 209, 0.18);
+  
 
   /* texto */
   --text:          #e7eaf2;
@@ -42,9 +43,11 @@ body {
        2. resplandor rojo tenue entrando por el borde derecho (como los mockups)
        3. halo azul original arriba-derecha */
   background:
-    linear-gradient(180deg, transparent 62%, rgba(0, 0, 0, 0.85) 100%),
-    /* radial-gradient(950px 2080px at 100% 100%, rgba(255, 0, 0, 0.18) 0%, transparent 62%),*/
+    linear-gradient(180deg, transparent 52%, rgba(0, 0, 0, 0.85) 100%),
+    /* linear-gradient(90deg, transparent 90%, rgba(255, 0, 0, 0.062) 100%), */
+    /* radial-gradient(950px 2080px at 100% 100%, rgba(255, 0, 0, 0.18) 0%, transparent 62%), */
     radial-gradient(1200px 600px at 72% -12%, #16234a 0%, var(--bg) 55%);
+    
   background-attachment: fixed;
   color: var(--text);
   font-family: var(--font);

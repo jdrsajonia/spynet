@@ -15,7 +15,7 @@ export default function CompareView({ data, loading, error, onCompare }) {
     <section>
       <header className="view-head">
         <h2 className="view-head__title">Compare Websites</h2>
-        <p className="view-head__meta">Compara el stack de dos sitios lado a lado.</p>
+        <p className="view-head__meta">Compare the stack technologies of two sites side by side.</p>
       </header>
 
       <div className="cmp-form">
@@ -29,7 +29,7 @@ export default function CompareView({ data, loading, error, onCompare }) {
         </button>
       </div>
 
-      {loading && <div className="placeholder">Comparing… (puede analizar en vivo si no hay datos previos)</div>}
+      {loading && <div className="placeholder">Comparing… (It can analyse in live if does not exist previous data)</div>}
       {error && <div className="error">{error}</div>}
       {data && <Results data={data} />}
     </section>
@@ -87,9 +87,9 @@ function SharedColumn({ items, a, b }) {
   return (
     <article className="card">
       <h3 className="card__title"><span className="dot" /> In Common ({items.length})</h3>
-      <p className="cmp-legend">Confianza: {a} / {b}</p>
+      <p className="cmp-legend">Confidence: {a} / {b}</p>
       <div className="scroll">
-        {items.length === 0 && <p className="muted">Sin tecnologías en común.</p>}
+        {items.length === 0 && <p className="muted">Without technologies in common.</p>}
         {items.map((t) => (
           <div className="tech" key={t.name}>
             <div>
@@ -112,7 +112,7 @@ function UniqueColumn({ title, items }) {
     <article className="card">
       <h3 className="card__title"><span className="dot" /> {title} ({items.length})</h3>
       <div className="scroll">
-        {items.length === 0 && <p className="muted">Ninguna.</p>}
+        {items.length === 0 && <p className="muted">None.</p>}
         {items.map((t) => (
           <div className="tech" key={t.name}>
             <div>

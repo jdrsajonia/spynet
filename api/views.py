@@ -184,7 +184,11 @@ class AnalysisCreateView(APIView):
         page_size = min(_safe_int(request.query_params.get("page_size"), 20), 100)
 
         qs = (
-            Analysis.objects.select_related("domain")
+            Analysis.objects
+            # historical/snapshot cuelgan sus tecnologías del WaybackSnapshot, no
+            # del Analysis, así que aquí aparecerían con 0 → se excluyen del listado.
+            .exclude(triggered_by__in=["historical", "snapshot"])
+            .select_related("domain")
             .annotate(technologies_count=Count("technologies"))
             .order_by("-analyzed_at")
         )

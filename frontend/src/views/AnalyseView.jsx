@@ -12,7 +12,7 @@ import { categoryColor } from "../utils/categories";
 export default function AnalyseView({ data, loading, error, wayback, onRetryWayback, onViewHistorical }) {
   if (loading) return <Scanning />;
   if (error) return <div className="error">{error}</div>;
-  if (!data) return <div className="placeholder">Escribe una URL arriba y presiona Enter para analizar.</div>;
+  if (!data) return <div className="placeholder">Write an URL above and press Enter to analyse.</div>;
 
   const { dns, whois, geo, technologies = [] } = data;
 
@@ -297,11 +297,11 @@ function TechnologiesCard({ technologies, security }) {
               </button>
               {open && (
                 <div className="tech__evidence">
-                  <div className="tech__evidence-title">Evidencias</div>
+                  <div className="tech__evidence-title">Evidences</div>
                   {items.length ? (
                     <ul>{items.map((e, i) => <li key={i}>{e}</li>)}</ul>
                   ) : (
-                    <span className="muted">Sin evidencia registrada.</span>
+                    <span className="muted">No evidence registred.</span>
                   )}
                 </div>
               )}
@@ -388,13 +388,13 @@ function SnapshotsCard({ wayback, onRetry, onViewHistorical }) {
       )}
       {wayback?.status === "done" && snapshots.length > 0 && (
         <button className="hist-cta" onClick={onViewHistorical}>
-          Ver todas las snapshots con sus tecnologías ↗
+          See all snapshots with its technologies ↗
         </button>
       )}
       {wayback?.status === "failed" && (
         <div className="snap-fail">
-          <span className="muted">No se pudieron cargar los snapshots.</span>
-          <button className="retry-btn" onClick={onRetry}>Reintentar</button>
+          <span className="muted">Could not load the snapshots.</span>
+          <button className="retry-btn" onClick={onRetry}>Retry</button>
         </div>
       )}
       {wayback?.status === "done" && (

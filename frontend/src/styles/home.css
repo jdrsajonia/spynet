@@ -1,0 +1,63 @@
+/* Vista Home: landing de presentación. Reutiliza .card y los tokens de tokens.css;
+   nada de colores hardcodeados. Traducción del mockup al sistema de diseño SpyNet. */
+
+.home { max-width: 1100px; margin: 0 auto; }
+
+/* ── HERO ─────────────────────────────────────────────── */
+.home-hero { text-align: center; padding: 40px 16px 8px; }
+.home-hero__title { margin: 0; font-size: 56px; font-weight: 800; letter-spacing: 3px; }
+.home-hero__title b { color: var(--red); }
+.home-hero__subtitle { margin: 10px 0 0; color: var(--text-muted); font-size: 14px; letter-spacing: 0.6px; }
+
+/* ── BANNER ───────────────────────────────────────────── */
+.home-banner { display: flex; justify-content: center; padding: 24px 16px; }
+.home-banner img {
+  max-width: 100%;
+  border-radius: var(--radius);
+  border: 1px solid var(--panel-border);
+  box-shadow: var(--shadow);
+}
+
+/* ── SECTIONS ─────────────────────────────────────────── */
+.home-section { padding: 34px 8px; }
+.home-h2 {
+  margin: 0 0 14px;
+  font-size: 26px;
+  font-weight: 700;
+  border-left: 3px solid var(--blue);
+  padding-left: 14px;
+}
+.home-prose { max-width: 720px; margin: 0; color: var(--text-muted); font-size: 15px; }
+.home-prose strong { color: var(--text); }
+
+/* ── FEATURES ─────────────────────────────────────────── */
+.home-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: var(--gap);
+  margin-top: 20px;
+}
+.home-card { position: relative; transition: transform 0.3s ease, box-shadow 0.3s ease; }
+.home-card:hover { transform: translateY(-4px); box-shadow: 0 0 25px var(--blue-soft); }
+.home-card__title { margin: 0 0 8px; color: var(--blue); font-size: 16px; font-weight: 600; }
+.home-card p { margin: 0; color: var(--text-muted); font-size: 14px; }
+
+/* badge "Experimental" — mismo lenguaje que los acentos en rojo de la app */
+.home-badge {
+  position: absolute; top: 14px; right: 14px;
+  font-size: 11px; color: var(--red);
+  border: 1px solid var(--red); border-radius: 6px;
+  padding: 2px 8px;
+}
+
+/* ── MASCOT ───────────────────────────────────────────── */
+.home-mascot { text-align: center; padding: 30px 16px; }
+.home-mascot img { width: 200px; margin-bottom: 14px; }
+.home-mascot p { font-style: italic; color: var(--text-muted); margin: 0; }
+
+/* ── FOOTER ───────────────────────────────────────────── */
+.home-footer {
+  text-align: center; padding: 30px 16px;
+  font-size: 13px; color: var(--text-dim);
+  border-top: 1px solid var(--panel-border);
+}

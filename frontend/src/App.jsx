@@ -3,6 +3,7 @@ import { useState, useEffect, useRef } from "react";
 import Sidebar from "./components/Sidebar";
 import Topbar from "./components/Topbar";
 import { Icon } from "./components/icons";
+import HomeView from "./views/HomeView";
 import AnalyseView from "./views/AnalyseView";
 import CompareView from "./views/CompareView";
 import DashboardView from "./views/DashboardView";
@@ -12,6 +13,7 @@ import { call, fetchSchema } from "./api";
 
 import "./styles/tokens.css";
 import "./styles/layout.css";
+import "./styles/home.css";
 import "./styles/analyse.css";
 import "./styles/compare.css";
 import "./styles/dashboard.css";
@@ -22,15 +24,17 @@ import "./styles/apidocs.css";
 // vistas y el shell son presentacionales y solo reciben props. Esto mantiene la
 // lógica separada de la presentación.
 const NAV = [
+  { key: "home",       label: "Home",       icon: Icon.home },
   { key: "analyse",    label: "Analyse",    icon: Icon.analyse },
   { key: "historical", label: "Historical", icon: Icon.historical },
-  { key: "dashboard",  label: "Dashboard",  icon: Icon.dashboard },
+  
   { key: "compare",    label: "Compare",    icon: Icon.compare },
+  { key: "dashboard",  label: "Dashboard",  icon: Icon.dashboard },
   { key: "apidocs",    label: "API Docs",   icon: Icon.apidocs },
 ];
 
 export default function App() {
-  const [view, setView] = useState("analyse");
+  const [view, setView] = useState("home");
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -214,6 +218,7 @@ export default function App() {
       <div>
         <Topbar onSearch={runAnalyze} busy={loading} showSearch={view !== "historical"} />
         <main className="content">
+          {view === "home" && <HomeView />}
           {view === "analyse" && (
             <AnalyseView
               data={data}
@@ -243,7 +248,7 @@ export default function App() {
           {view === "apidocs" && (
             <ApiDocsView schema={schema} loading={schemaLoading} error={schemaError} />
           )}
-          {!["analyse", "historical", "compare", "dashboard", "apidocs"].includes(view) && (
+          {!["home", "analyse", "historical", "compare", "dashboard", "apidocs"].includes(view) && (
             <div className="placeholder">— vista «{view}» pendiente —</div>
           )}
         </main>

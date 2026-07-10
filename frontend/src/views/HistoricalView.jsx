@@ -36,7 +36,7 @@ export default function HistoricalView({ url, onUrlChange, onAnalyze, data, load
         <div className="hist-head__intro">
           <h2 className="hist-head__title">Historical Analysis</h2>
           <p className="hist-head__sub">
-            Explora cómo ha evolucionado un sitio en el tiempo.
+            Explore how it has envolved a site on a timeline.
 
           </p>
         </div>
@@ -44,13 +44,13 @@ export default function HistoricalView({ url, onUrlChange, onAnalyze, data, load
           <input
             name="hist-url"
             className="hist-head__input"
-            placeholder="Escribe una URL para explorar su historial (ej. example.com)"
+            placeholder="Write an URL to explore its historical data (ej. github.com)"
             value={local}
             onChange={(e) => setLocal(e.target.value)}
             autoComplete="off"
           />
           <button className="hist-head__btn" type="submit" disabled={loading || !local.trim()}>
-            {loading ? "Buscando…" : "Explore History ›"}
+            {loading ? "Searching…" : "Explore History ›"}
           </button>
         </form>
       </header>
@@ -59,10 +59,10 @@ export default function HistoricalView({ url, onUrlChange, onAnalyze, data, load
       {error && <div className="error">{error}</div>}
 
       {!loading && !error && data && ordered.length === 0 && (
-        <div className="placeholder">No hay capturas archivadas para este dominio.</div>
+        <div className="placeholder">No snapshots filed for this domain.</div>
       )}
       {!loading && !error && !data && (
-        <div className="placeholder">Escribe una URL y presiona «Explore History».</div>
+        <div className="placeholder">Write an URL and press «Explore History».</div>
       )}
 
       {!loading && ordered.length > 0 && (
@@ -73,7 +73,7 @@ export default function HistoricalView({ url, onUrlChange, onAnalyze, data, load
             ))}
           </div>
           <p className="hist-count">
-            ⓘ Mostrando {ordered.length} capturas del historial de Wayback Machine
+            ⓘ Showing {ordered.length} snapshots from Wayback Machine historical
           </p>
         </>
       )}
@@ -105,7 +105,7 @@ function SnapshotRow({ snap, latest }) {
         <div className="tl-body">
           <div className="tl-body__label">Detected Technologies</div>
           {techs.length === 0 ? (
-            <p className="muted">No se detectaron tecnologías en esta captura.</p>
+            <p className="muted">No tecnologies detected at this snapshot.</p>
           ) : (
             <div className="tl-techs">
               {techs.map((t) => (

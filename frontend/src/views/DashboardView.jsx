@@ -9,9 +9,9 @@ import { CATEGORIES } from "../utils/categories";
 // Todo lo que pinta sale de datos reales del backend (/stats/ + /analyses/).
 
 export default function DashboardView({ data, loading, error }) {
-  if (loading) return <div className="placeholder">Cargando dashboard…</div>;
+  if (loading) return <div className="placeholder">Loading dashboard…</div>;
   if (error) return <div className="error">{error}</div>;
-  if (!data) return <div className="placeholder">Sin datos.</div>;
+  if (!data) return <div className="placeholder">No data.</div>;
 
   const { stats, recent } = data;
 
@@ -20,7 +20,7 @@ export default function DashboardView({ data, loading, error }) {
       <header className="dash-head">
         <div>
           <h2 className="dash-head__title">Dashboard</h2>
-          <p className="dash-head__sub">Resumen de todos los análisis y tendencias detectadas por Spynet.</p>
+          <p className="dash-head__sub">Summary of all analyses and trends detected by Spynet.</p>
         </div>
         <span className="dash-chip">All time</span>
       </header>
@@ -73,7 +73,7 @@ function TopTechnologies({ items }) {
           </button>
         ))}
       </div>
-      {filtered.length === 0 && <p className="muted">Sin datos en esta categoría.</p>}
+      {filtered.length === 0 && <p className="muted">No data in this category.</p>}
       {filtered.map((t, i) => (
         <div className="rank" key={t.name + t.category}>
           <span className="rank__pos">{i + 1}</span>
@@ -97,7 +97,7 @@ function RecentlyAnalysed({ rows }) {
         <div className="rad__row rad__head">
           <span>Domain</span><span>Technologies</span><span>Date</span><span>Status</span>
         </div>
-        {rows.length === 0 && <p className="muted">Aún no hay análisis.</p>}
+        {rows.length === 0 && <p className="muted">No data analyses yet.</p>}
         <div className="rad__body">
           {rows.map((a) => (
             <div className="rad__row" key={a.id}>
