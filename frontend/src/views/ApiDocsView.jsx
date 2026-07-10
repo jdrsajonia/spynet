@@ -170,6 +170,8 @@ function Operation({ op, root }) {
         </article>
       )}
 
+      <CurlExample op={op} root={root} pathParams={pathParams} queryParams={queryParams} bodyFields={bodyFields} />
+
       <TryIt key={op.key} op={op} root={root} pathParams={pathParams} queryParams={queryParams} bodyFields={bodyFields} />
 
       <article className="card">
@@ -243,6 +245,63 @@ function SchemaField({ field, root, depth }) {
         </div>
       )}
     </div>
+  );
+}
+
+// ── ejemplo cURL ──────────────────────────────────────────────────────────────
+
+// Un valor de muestra para el body, según el tipo del campo. La idea no es dar un
+// valor real (imposible saberlo), sino enseñar la ESTRUCTURA: qué clave lleva y
+// de qué tipo es. Los placeholders van entre <…> para que se vean como "rellename".
+function sampleValue(label) {
+  if (label === "integer" || label === "number") return 0;
+  if (label === "boolean") return true;
+  if (label === "json") return {};
+  if (label.endsWith("[]")) return [];
+  if (label.startsWith("map<")) return {};
+  return `<${label}>`;
+}
+
+// Construye el comando curl desde el propio esquema, así nunca se desincroniza del
+// backend. Path params → <name> en la URL; query params → ?k=<tipo>; body → -d con
+// un JSON de muestra. GET no lleva -X ni body.
+function curlSnippet({ op, root, pathParams, queryParams, bodyFields }) {
+  let path = stripBasePath(op.path, API_BASE);
+  for (const p of pathParams) {
+    path = path.replace(`{${p.name}}`, `<${p.name}>`);
+  }
+  const qs = queryParams
+    .map((p) => `${p.name}=<${typeLabel(p.schema, root)}>`)
+    .join("&");
+  if (qs) path += `?${qs}`;
+
+  const url = `${API_BASE}${path}`;
+  const method = op.method.toUpperCase();
+  const methodFlag = method === "GET" ? "" : `-X ${method} `;
+
+  if (bodyFields.length > 0) {
+    const sample = {};
+    for (const f of bodyFields) sample[f.name] = sampleValue(typeLabel(f.node, root));
+    const json = JSON.stringify(sample, null, 2);
+    return `curl ${methodFlag}"${url}" \\\n  -H "Content-Type: application/json" \\\n  -d '${json}'`;
+  }
+  return `curl ${methodFlag}"${url}"`;
+}
+
+function CurlExample({ op, root, pathParams, queryParams, bodyFields }) {
+  const snippet = useMemo(
+    () => curlSnippet({ op, root, pathParams, queryParams, bodyFields }),
+    [op, root, pathParams, queryParams, bodyFields]
+  );
+  return (
+    <article className="card">
+      <h3 className="card__title"><span className="dot" /> cURL example</h3>
+      <p className="muted">
+        Cópialo en tu terminal para probarlo al momento. Sustituye los valores
+        entre <code>&lt;…&gt;</code> por los tuyos.
+      </p>
+      <pre className="docs__json docs__curl">{snippet}</pre>
+    </article>
   );
 }
 

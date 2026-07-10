@@ -230,3 +230,12 @@
   white-space: pre;
 }
 .docs__prose .docs__json { white-space: pre-wrap; }
+
+/* El comando curl se envuelve (no scroll horizontal) para poder copiarlo entero,
+   y lleva un acento azul a la izquierda para leerse como "esto es ejecutable". */
+.docs__curl {
+  white-space: pre-wrap;
+  word-break: break-all;
+  color: var(--text);
+  border-left: 3px solid var(--blue);
+}
