@@ -64,7 +64,7 @@ export default function ApiDocsView({ schema, loading, error }) {
         <aside className="docs__nav card">
           <input
             className="docs__search"
-            placeholder="Filtrar endpoints…"
+            placeholder="Filter endpoints…"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
           />
@@ -262,6 +262,23 @@ function sampleValue(label) {
   return `<${label}>`;
 }
 
+// Resuelve API_BASE a una URL absoluta para que el curl muestre siempre el host
+// completo. Si API_BASE ya es absoluta (trae protocolo+host), la respeta. Si es
+// relativa (p. ej. "/api/v1" detrás del proxy nginx), la ancla al origen desde
+// donde se sirve la página: así sale la IP pública en producción o localhost en
+// dev, sin nada hardcodeado.
+function absoluteBase(apiBase) {
+  try {
+    return new URL(apiBase).href.replace(/\/$/, "");
+  } catch {
+    const origin =
+      typeof window !== "undefined"
+        ? window.location.origin
+        : "http://localhost:8000";
+    return `${origin}${apiBase}`.replace(/\/$/, "");
+  }
+}
+
 // Construye el comando curl desde el propio esquema, así nunca se desincroniza del
 // backend. Path params → <name> en la URL; query params → ?k=<tipo>; body → -d con
 // un JSON de muestra. GET no lleva -X ni body.
@@ -275,7 +292,7 @@ function curlSnippet({ op, root, pathParams, queryParams, bodyFields }) {
     .join("&");
   if (qs) path += `?${qs}`;
 
-  const url = `${API_BASE}${path}`;
+  const url = `${absoluteBase(API_BASE)}${path}`;
   const method = op.method.toUpperCase();
   const methodFlag = method === "GET" ? "" : `-X ${method} `;
 
@@ -297,8 +314,8 @@ function CurlExample({ op, root, pathParams, queryParams, bodyFields }) {
     <article className="card">
       <h3 className="card__title"><span className="dot" /> cURL example</h3>
       <p className="muted">
-        Cópialo en tu terminal para probarlo al momento. Sustituye los valores
-        entre <code>&lt;…&gt;</code> por los tuyos.
+        Usage example with cURL
+        
       </p>
       <pre className="docs__json docs__curl">{snippet}</pre>
     </article>
@@ -355,8 +372,8 @@ function TryIt({ op, root, pathParams, queryParams, bodyFields }) {
     } catch (err) {
       const hint =
         err instanceof SyntaxError
-          ? "Un campo JSON no es válido."
-          : "¿El backend está corriendo en :8000?";
+          ? "A JSON field is invalid."
+          : "Is the backend running on :8000?";
       setResult({ status: null, body: { _error: `${err.message} — ${hint}` } });
     } finally {
       setBusy(false);

@@ -7,7 +7,7 @@ export default function Sidebar({ items, active, onSelect }) {
         {}
         <img
           className="sidebar__logo-img"
-          src="/tux_spynet_profesional.png"
+          src="/tux_spynet_profesional.webp"
           alt=""
           onError={(e) => { e.currentTarget.style.display = "none"; }}
         />

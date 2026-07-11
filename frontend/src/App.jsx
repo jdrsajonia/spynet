@@ -79,10 +79,10 @@ export default function App() {
         if (statsRes.body.success && listRes.body.success) {
           setDashData({ stats: statsRes.body.data, recent: listRes.body.data });
         } else {
-          setDashError("Error cargando el dashboard.");
+          setDashError("Failed to load the dashboard.");
         }
       } catch {
-        setDashError("No se pudo conectar con el backend (¿corriendo en :8000?).");
+        setDashError("Couldn't reach the backend (is it running on :8000?).");
       } finally {
         setDashLoading(false);
       }
@@ -98,7 +98,7 @@ export default function App() {
       try {
         setSchema(await fetchSchema());
       } catch {
-        setSchemaError("No se pudo cargar el esquema (¿el backend está corriendo en :8000?).");
+        setSchemaError("Couldn't load the schema (is the backend running on :8000?).");
       } finally {
         setSchemaLoading(false);
       }
@@ -124,7 +124,7 @@ export default function App() {
         setError(body.error?.message || `Error ${status}`);
       }
     } catch {
-      setError("No se pudo conectar con el backend (¿corriendo en :8000?).");
+      setError("Couldn't reach the backend (is it running on :8000?).");
     } finally {
       setLoading(false);
     }
@@ -179,7 +179,7 @@ export default function App() {
         setHistError(body.error?.message || `Error ${status}`);
       }
     } catch {
-      setHistError("No se pudo conectar con el backend (¿corriendo en :8000?).");
+      setHistError("Couldn't reach the backend (is it running on :8000?).");
     } finally {
       setHistLoading(false);
     }
@@ -206,7 +206,7 @@ export default function App() {
       if (body.success) setCmpData(body.data);
       else setCmpError(body.error?.message || `Error ${status}`);
     } catch {
-      setCmpError("No se pudo conectar con el backend (¿corriendo en :8000?).");
+      setCmpError("Couldn't reach the backend (is it running on :8000?).");
     } finally {
       setCmpLoading(false);
     }

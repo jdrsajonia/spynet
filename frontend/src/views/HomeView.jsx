@@ -14,11 +14,18 @@ export default function HomeView() {
 
       {/* BANNER */}
       <section className="home-banner">
-        <img
-          src="/spynet_penguins.png"
-          alt="Spynet banner"
-          onError={(e) => { e.currentTarget.parentElement.style.display = "none"; }}
-        />
+        <picture>
+          {/* WebP ligero (~34 KB) para navegadores modernos; PNG como fallback */}
+          <source srcSet="/spynet_penguins.webp" type="image/webp" />
+          <img
+            src="/spynet_penguins.png"
+            alt="Spynet banner"
+            width={1400}
+            height={788}
+            fetchPriority="high"
+            onError={(e) => { e.currentTarget.parentElement.parentElement.style.display = "none"; }}
+          />
+        </picture>
       </section>
 
       {/* ABOUT */}
@@ -66,7 +73,7 @@ export default function HomeView() {
       {/* MASCOT */}
       <section className="home-mascot">
         <img
-          src="/tux_spynet_profesional.png"
+          src="/tux_spynet_profesional.webp"
           alt="Spynet Tux"
           onError={(e) => { e.currentTarget.style.display = "none"; }}
         />

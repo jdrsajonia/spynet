@@ -268,7 +268,7 @@ function TechnologiesCard({ technologies, security }) {
           className="tech-expand"
           onClick={() => { setExpandAll((v) => !v); setOpenName(null); }}
         >
-          {expandAll ? "▾ Colapsar evidencias" : "▸ Ver todas las evidencias"}
+          {expandAll ? "▾ Collapse evidence" : "▸ Show all evidence"}
         </button>
       )}
       <div className="scroll">
@@ -289,7 +289,7 @@ function TechnologiesCard({ technologies, security }) {
                   <div className="tech__name">
                     {t.name}
                     {t.version && <span className="tech__ver">v{t.version}</span>}
-                    {eolNames.has(t.name) && <span className="tech__eol" title="End-of-Life: versión sin soporte">EOL</span>}
+                    {eolNames.has(t.name) && <span className="tech__eol" title="End-of-Life: unsupported version">EOL</span>}
                   </div>
                   <div className="tech__cat">{t.category}</div>
                 </div>

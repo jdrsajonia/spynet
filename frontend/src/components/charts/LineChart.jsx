@@ -2,7 +2,7 @@
 export default function LineChart({ points }) {
   const W = 600, H = 190, pad = 12;
   if (!points || points.length === 0) {
-    return <div className="muted">Sin actividad todavía.</div>;
+    return <div className="muted">No activity yet.</div>;
   }
 
   const max = Math.max(...points.map((p) => p.value), 1);

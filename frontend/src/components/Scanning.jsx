@@ -5,7 +5,7 @@ export default function Scanning({ text = "Exegetes of the web, decoding this si
     <div className="scanning">
       <img
         className="scanning__img"
-        src="/tux_spynet_profesional.png"
+        src="/tux_spynet_profesional.webp"
         alt=""
         onError={(e) => { e.currentTarget.style.display = "none"; }}
       />
