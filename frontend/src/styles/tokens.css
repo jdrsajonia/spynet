@@ -35,14 +35,20 @@
 }
 
 * { box-sizing: border-box; }
-html, body, #root { height: 100%; margin: 0; }
+/* Nota: usamos min-height (no height:100%) para que la caja de <body> CREZCA con
+   el contenido. Si se fija a 100% (un viewport), el gradiente de body se recorta
+   al bajar en páginas largas como API Docs. */
+html, body, #root { margin: 0; }
+html { min-height: 100%; }
+#root { min-height: 100vh; }
 
-/* Piso sólido oscuro: garantiza que NUNCA se vea el blanco por defecto del
-   navegador, aunque los gradientes de abajo no pinten (ej. background-attachment
-   fixed roto en móviles). */
+/* Piso sólido oscuro en ambos: garantiza que NUNCA se vea el blanco por defecto
+   del navegador, aunque los gradientes no pinten (ej. background-attachment fixed
+   roto en móviles). */
 html { background-color: var(--bg); }
 
 body {
+  min-height: 100vh;
   background-color: var(--bg);
   /* Capas (de arriba abajo en el stack):
        1. fundido a negro en el fondo de la pantalla
@@ -53,13 +59,15 @@ body {
     /* linear-gradient(90deg, transparent 90%, rgba(255, 0, 0, 0.062) 100%), */
     /* radial-gradient(950px 2080px at 100% 100%, rgba(255, 0, 0, 0.18) 0%, transparent 62%), */
     radial-gradient(1200px 600px at 72% -12%, #16234a 0%, var(--bg) 55%);
+  background-repeat: no-repeat;
 
-  /* En móviles `fixed` se ignora/rompe; solo lo activamos en pantallas grandes. */
   color: var(--text);
   font-family: var(--font);
   -webkit-font-smoothing: antialiased;
 }
 
+/* En móviles `fixed` se ignora/rompe; solo lo activamos en pantallas grandes.
+   Con body creciendo con el contenido, el fondo fijo cubre toda la página. */
 @media (min-width: 900px) {
   body { background-attachment: fixed; }
 }
