@@ -20,8 +20,8 @@ export default function HomeView() {
           <img
             src="/spynet_penguins.png"
             alt="Spynet banner"
-            width={1400}
-            height={788}
+            width={1672}
+            height={941}
             fetchPriority="high"
             onError={(e) => { e.currentTarget.parentElement.parentElement.style.display = "none"; }}
           />

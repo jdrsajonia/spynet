@@ -13,6 +13,7 @@
 .home-banner { display: flex; justify-content: center; padding: 24px 16px; }
 .home-banner img {
   max-width: 100%;
+  height: auto;
   border-radius: var(--radius);
   border: 1px solid var(--panel-border);
   box-shadow: var(--shadow);
