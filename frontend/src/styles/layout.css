@@ -102,3 +102,70 @@
 .topbar__search button:disabled { opacity: 0.5; cursor: default; }
 
 .content { padding: 8px 28px 48px; }
+
+/* Botón hamburguesa: oculto en desktop, aparece en móvil. */
+.topbar__menu-btn { display: none; }
+.sidebar__overlay { display: none; }
+
+/* ── Responsive: < 900px el sidebar se vuelve un drawer deslizable ──────────── */
+@media (max-width: 899px) {
+  .app { grid-template-columns: 1fr; }
+
+  /* El sidebar sale del flujo y se esconde a la izquierda hasta abrirse. */
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 50;
+    width: min(232px, 82vw);
+    background: #0a0f1c;                 /* opaco: legible sobre el overlay */
+    transform: translateX(-100%);
+    transition: transform 0.25s ease;
+  }
+  .sidebar.is-open { transform: translateX(0); }
+
+  /* Fondo oscuro detrás del drawer abierto. */
+  .sidebar__overlay {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 40;
+    background: rgba(0, 0, 0, 0.5);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s ease;
+  }
+  .sidebar__overlay.is-open { opacity: 1; pointer-events: auto; }
+
+  /* Topbar: [hamburguesa | marca] en una fila, buscador a lo ancho debajo. */
+  .topbar {
+    grid-template-columns: auto 1fr;
+    padding: 12px 16px;
+    gap: 10px;
+  }
+  .topbar__menu-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    grid-column: 1;
+    width: 40px;
+    height: 40px;
+    border: 1px solid var(--panel-border);
+    border-radius: 10px;
+    background: var(--bg-1);
+    color: var(--text);
+    cursor: pointer;
+  }
+  .topbar__brand {
+    grid-column: 2;
+    justify-self: start;
+    text-align: left;
+  }
+  .topbar__search {
+    grid-column: 1 / -1;                  /* fila completa, debajo */
+    justify-self: stretch;
+    width: auto;
+  }
+
+  .content { padding: 8px 16px 40px; }
+}

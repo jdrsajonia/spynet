@@ -35,6 +35,8 @@ const NAV = [
 
 export default function App() {
   const [view, setView] = useState("home");
+  // Drawer del sidebar en móvil (en desktop el sidebar siempre está visible).
+  const [menuOpen, setMenuOpen] = useState(false);
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -214,9 +216,20 @@ export default function App() {
 
   return (
     <div className="app">
-      <Sidebar items={NAV} active={view} onSelect={setView} />
+      <Sidebar
+        items={NAV}
+        active={view}
+        onSelect={(v) => { setView(v); setMenuOpen(false); }}
+        open={menuOpen}
+        onClose={() => setMenuOpen(false)}
+      />
       <div>
-        <Topbar onSearch={runAnalyze} busy={loading} showSearch={view !== "historical"} />
+        <Topbar
+          onSearch={runAnalyze}
+          busy={loading}
+          showSearch={view !== "historical"}
+          onMenu={() => setMenuOpen(true)}
+        />
         <main className="content">
           {view === "home" && <HomeView />}
           {view === "analyse" && (

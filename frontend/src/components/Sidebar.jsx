@@ -1,8 +1,15 @@
 // Componente presentacional: solo pinta la navegación. No sabe de datos ni de
 // estilos concretos (todo viene de layout.css). Recibe items + estado por props.
-export default function Sidebar({ items, active, onSelect }) {
+export default function Sidebar({ items, active, onSelect, open = false, onClose }) {
   return (
-    <aside className="sidebar">
+    <>
+      {/* Fondo oscuro que cierra el drawer al tocar fuera (solo visible en móvil). */}
+      <div
+        className={"sidebar__overlay" + (open ? " is-open" : "")}
+        onClick={onClose}
+        aria-hidden="true"
+      />
+    <aside className={"sidebar" + (open ? " is-open" : "")}>
       <div className="sidebar__logo">
         {}
         <img
@@ -28,5 +35,6 @@ export default function Sidebar({ items, active, onSelect }) {
         ))}
       </nav>
     </aside>
+    </>
   );
 }
