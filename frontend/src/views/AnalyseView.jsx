@@ -40,7 +40,9 @@ export default function AnalyseView({ data, loading, error, wayback, onRetryWayb
         <SnapshotsCard wayback={wayback} onRetry={onRetryWayback} onViewHistorical={onViewHistorical} />
       </div>
 
-      <AiChatPanel analysis={data} />
+      {/* El wayback se carga aparte (App.jsx) y no viene dentro de `data`: se
+          inyecta aquí para que la IA vea el mismo historial que la tarjeta. */}
+      <AiChatPanel analysis={wayback?.data ? { ...data, wayback: wayback.data } : data} />
     </section>
   );
 }

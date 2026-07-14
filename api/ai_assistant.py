@@ -15,8 +15,11 @@ import urllib.request
 logger = logging.getLogger(__name__)
 
 # Límites para no exceder tokens de Gemini ni enviar payloads enormes.
-_MAX_CONTEXT_CHARS = 6000
+_MAX_CONTEXT_CHARS = 12000
 _MAX_HISTORY_TURNS = 6  # últimos 6 mensajes (3 pares user/assistant)
+
+# Tipos DNS que se listan primero; el resto (SOA, CAA, …) va detrás, sin perderse.
+_DNS_TYPES = ("A", "AAAA", "CNAME", "NS", "MX")
 
 
 # ── contexto textual ─────────────────────────────────────────────────────────
@@ -27,9 +30,26 @@ def _truncate(text: str, max_len: int = 300) -> str:
     return text[:max_len] + "…"
 
 
+def _empty(value) -> bool:
+    """Vacío = ausente. Ojo: 0 y False NO son vacíos (un cert con 0 días vive)."""
+    return value is None or value == "" or (isinstance(value, (list, tuple, dict)) and not value)
+
+
+def _render(value) -> str:
+    if isinstance(value, bool):
+        return "yes" if value else "no"
+    if isinstance(value, (list, tuple)):
+        return ", ".join(str(v) for v in value)
+    return str(value)
+
+
 def _fields(data: dict, fields: list[tuple[str, str]]) -> list[str]:
     """[(clave, etiqueta), …] → ["  Etiqueta: valor", …] para las claves con valor."""
-    return [f"  {label}: {data[key]}" for key, label in fields if data.get(key)]
+    return [
+        f"  {label}: {_render(data[key])}"
+        for key, label in fields
+        if not _empty(data.get(key))
+    ]
 
 
 def build_context(analysis: dict) -> str:
@@ -40,6 +60,26 @@ def build_context(analysis: dict) -> str:
         f"Domain: {a.get('domain', '?')}",
         f"Analysis status: {a.get('status', '?')}",
     ]
+    parts += _fields(a, [
+        ("analyzed_at", "Analyzed at"), ("duration_ms", "Duration (ms)"),
+        ("triggered_by", "Triggered by"),
+    ])
+    tags = a.get("tags") or {}
+    if tags:
+        parts.append("  Tags: " + ", ".join(f"{k}={v}" for k, v in tags.items()))
+
+    # Fallos parciales: la diferencia entre "el dato no existe" y "el servicio falló".
+    errors = a.get("errors") or []
+    if errors:
+        parts.append(
+            "Services that FAILED during this analysis (their data is missing because of "
+            "the failure, not because it doesn't exist — say so if asked):\n"
+            + "\n".join(
+                f"  {e.get('service', '?')}: {e.get('code') or 'error'}"
+                + (f" — {_truncate(e.get('message', ''), 120)}" if e.get("message") else "")
+                for e in errors
+            )
+        )
 
     # Technologies
     techs = a.get("technologies") or []
@@ -50,29 +90,35 @@ def build_context(analysis: dict) -> str:
             if t.get("version"):
                 entry += f" v{t['version']}"
             entry += f" ({t.get('category', '?')}, {t.get('confidence', '?')}%)"
-            evidence = _truncate(t.get("evidence", ""), 120)
+            evidence = _truncate(t.get("evidence", ""), 200)
             if evidence:
                 entry += f" [{evidence}]"
             items.append(f"  - {entry}")
         parts.append(f"Detected technologies ({len(techs)}):\n" + "\n".join(items))
 
-    # DNS
+    # DNS — tipos conocidos primero, luego cualquier otro tipo que traiga el resolver.
     dns = a.get("dns") or {}
+    extra_types = [rt for rt in dns if rt not in _DNS_TYPES and rt != "TXT"]
     dns_lines = [
         f"  {rt}: {', '.join(str(v) for v in dns[rt][:10])}"
-        for rt in ("A", "AAAA", "CNAME", "NS", "MX") if dns.get(rt)
+        for rt in (*_DNS_TYPES, *sorted(extra_types)) if dns.get(rt)
     ]
     txt = dns.get("TXT") or []
     if txt:
-        dns_lines.append(f"  TXT: {len(txt)} record(s) — e.g. {_truncate(str(txt[0]), 150)}")
+        dns_lines.append(f"  TXT ({len(txt)} record(s)):")
+        dns_lines += [f"    - {_truncate(str(v), 200)}" for v in txt[:10]]
+        if len(txt) > 10:
+            dns_lines.append(f"    … and {len(txt) - 10} more TXT record(s)")
     if dns_lines:
         parts.append("DNS records:\n" + "\n".join(dns_lines))
 
-    # WHOIS and Geo (data-driven)
+    # WHOIS y Geo (data-driven)
     whois_lines = _fields(a.get("whois") or {}, [
         ("registrar", "Registrar"), ("org", "Organization"), ("registrant", "Registrant"),
         ("country", "Country"), ("creation_date", "Created"), ("expiration_date", "Expires"),
         ("updated_date", "Updated"), ("domain_age_years", "Age (years)"),
+        ("status", "EPP status codes"), ("dnssec", "DNSSEC (registry)"),
+        ("emails", "Contact emails"),
     ])
     if whois_lines:
         parts.append("WHOIS:\n" + "\n".join(whois_lines))
@@ -80,6 +126,7 @@ def build_context(analysis: dict) -> str:
     geo_lines = _fields(a.get("geo") or {}, [
         ("country", "Country"), ("city", "City"), ("isp", "ISP"),
         ("org", "Organization"), ("ip", "IP"), ("reverse_dns", "Reverse DNS"),
+        ("lat", "Latitude"), ("lon", "Longitude"),
     ])
     if geo_lines:
         parts.append("Geolocation:\n" + "\n".join(geo_lines))
@@ -94,17 +141,22 @@ def build_context(analysis: dict) -> str:
             tls_lines.append(f"  Status: INVALID ({tls.get('error', 'unknown error')})")
         tls_lines += _fields(tls, [
             ("issuer", "Issuer"), ("subject_cn", "Common Name"),
-            ("valid_to", "Valid until"), ("tls_version", "TLS version"),
-            ("days_to_expiry", "Days to expiry"),
+            ("valid_from", "Valid from"), ("valid_to", "Valid until"),
+            ("tls_version", "TLS version"), ("days_to_expiry", "Days to expiry"),
         ])
+        san = tls.get("san") or []
+        if san:
+            shown = ", ".join(san[:15])
+            more = f" (+{len(san) - 15} more)" if len(san) > 15 else ""
+            tls_lines.append(f"  Domains covered (SAN, {len(san)}): {shown}{more}")
         parts.append("SSL/TLS certificate:\n" + "\n".join(tls_lines))
 
     # Email security
     email = a.get("email_security") or {}
     if email:
         parts.append("Email security:\n" + "\n".join([
-            f"  SPF: {_truncate(email['spf'], 150) if email.get('spf') else 'not configured'}",
-            f"  DMARC: {_truncate(email['dmarc'], 150) if email.get('dmarc') else 'not configured'}",
+            f"  SPF: {_truncate(email['spf'], 200) if email.get('spf') else 'not configured'}",
+            f"  DMARC: {_truncate(email['dmarc'], 200) if email.get('dmarc') else 'not configured'}",
             f"  DNSSEC: {'enabled' if email.get('dnssec') else 'not enabled'}",
         ]))
 
@@ -112,22 +164,69 @@ def build_context(analysis: dict) -> str:
     security = a.get("security") or {}
     if security:
         findings = security.get("findings") or []
-        parts.append(f"Security audit: grade {security.get('grade', '?')}, {len(findings)} finding(s)")
-        for f in findings[:12]:
+        head = f"Security audit: grade {security.get('grade', '?')}"
+        if not _empty(security.get("score")):
+            head += f" (score {security['score']}/100)"
+        sec_lines = [f"{head}, {len(findings)} finding(s)"]
+        for f in findings[:20]:
             line = f"  [{f.get('severity', '?').upper()}] {f.get('title', '?')}"
-            if f.get("tech"):
+            if f.get("category"):
+                line += f" ({f['category']}"
+                line += f", {f['tech']})" if f.get("tech") else ")"
+            elif f.get("tech"):
                 line += f" ({f['tech']})"
             if f.get("detail"):
-                line += f": {_truncate(f['detail'], 150)}"
-            parts.append(line)
+                line += f": {_truncate(f['detail'], 200)}"
+            sec_lines.append(line)
+        if len(findings) > 20:
+            sec_lines.append(f"  … and {len(findings) - 20} more finding(s)")
+        parts.append("\n".join(sec_lines))
 
-    # What is NOT available (so the LLM doesn't make things up)
+    # Wayback Machine (historial de capturas y su stack en cada momento)
+    wayback = a.get("wayback") or {}
+    snapshots = wayback.get("snapshots") or []
+    if wayback:
+        wb_lines = _fields(wayback, [
+            ("snapshot_count", "Snapshots stored"), ("archive_pages", "Archive pages (CDX)"),
+            ("first_snapshot_at", "First capture"), ("last_snapshot_at", "Last capture"),
+        ])
+        for s in snapshots[:12]:
+            names = [t.get("name", "?") for t in (s.get("technologies") or [])]
+            stack = ", ".join(names[:8]) if names else "no technologies detected"
+            if len(names) > 8:
+                stack += f" (+{len(names) - 8} more)"
+            wb_lines.append(f"  {s.get('timestamp', '?')}: {stack}")
+        if len(snapshots) > 12:
+            wb_lines.append(f"  … and {len(snapshots) - 12} more snapshot(s)")
+        if wb_lines:
+            parts.append("Wayback Machine history:\n" + "\n".join(wb_lines))
+
+    # Lo que NO está disponible (para que el LLM no se lo invente)
     missing = [name for name, val in [
         ("technologies", techs), ("DNS", dns), ("WHOIS", a.get("whois")),
-        ("geolocation", a.get("geo")), ("SSL/TLS", tls),
+        ("geolocation", a.get("geo")), ("SSL/TLS", tls), ("email security", email),
+        ("security audit", security), ("Wayback history", wayback),
     ] if not val]
     if missing:
         parts.append(f"Data NOT available in this analysis: {', '.join(missing)}")
+
+    return _fit(parts)
+
+
+def _fit(parts: list[str]) -> str:
+    """
+    Ajusta el contexto al límite recortando las secciones MÁS LARGAS (típicamente
+    tecnologías o TXT), no el final: la auditoría de seguridad y el Wayback van
+    al final y son lo último que queremos perder.
+    """
+    while len("\n".join(parts)) > _MAX_CONTEXT_CHARS:
+        idx = max(range(len(parts)), key=lambda i: len(parts[i]))
+        longest = parts[idx]
+        if len(longest) <= 300:
+            break  # ya no queda nada gordo que recortar: corte duro abajo
+        excess = len("\n".join(parts)) - _MAX_CONTEXT_CHARS
+        keep = max(300, len(longest) - excess - 40)
+        parts[idx] = longest[:keep] + "\n  […section truncated due to length]"
 
     context = "\n".join(parts)
     if len(context) > _MAX_CONTEXT_CHARS:
@@ -290,6 +389,11 @@ def _executive_summary(analysis: dict) -> str:
     if geo.get("country"):
         loc = f"{geo['city']}, {geo['country']}" if geo.get("city") else geo["country"]
         lines.append(f"**Hosting**: {loc}" + (f" ({geo['isp']})" if geo.get("isp") else ""))
+
+    errors = analysis.get("errors") or []
+    if errors:
+        failed = ", ".join(e.get("service", "?") for e in errors)
+        lines.append(f"**Incomplete data**: these services failed during the analysis: {failed}")
 
     return "\n".join(lines)
 
