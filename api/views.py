@@ -1,4 +1,5 @@
 import time
+from collections import Counter
 
 from django.core.paginator import Paginator
 from django.db.models import Avg, Count
@@ -545,16 +546,29 @@ class StatsView(APIView):
         avg_ms = Analysis.objects.aggregate(v=Avg("duration_ms"))["v"]
         avg_conf = Technology.objects.aggregate(v=Avg("confidence"))["v"]
 
-        top = (
-            Technology.objects.values("name", "category")
-            .annotate(count=Count("id"))
-            .order_by("-count", "name")[:20]
+        # Detecciones deduplicadas por dominio: una tecnología cuenta UNA sola vez
+        # por dominio, sin importar cuántas veces se reanalizó ese dominio. Así
+        # reanalizar Facebook 100 veces no infla "php" a 100. Solo se cuentan
+        # análisis en vivo (analysis__isnull=False); las tecnologías de snapshots
+        # históricos (Wayback) no alimentan el dashboard.
+        # Las tres métricas de abajo (top_technologies, by_category,
+        # total_detections) se derivan de esta misma base, así que sus totales
+        # siempre cuadran y el donut queda coherente.
+        detections = (
+            Technology.objects
+            .filter(analysis__isnull=False)
+            .values_list("analysis__domain_id", "name", "category")
+            .distinct()
         )
-        by_category = (
-            Technology.objects.values("category")
-            .annotate(count=Count("id"))
-            .order_by("category")
-        )
+
+        by_name = Counter()      # (name, category) -> nº de dominios distintos
+        by_category = Counter()  # category         -> nº de detecciones únicas
+        for _domain_id, name, category in detections:
+            by_name[(name, category)] += 1
+            by_category[category] += 1
+
+        top = sorted(by_name.items(), key=lambda kv: (-kv[1], kv[0][0]))[:20]
+
         activity = (
             Analysis.objects.annotate(day=TruncDate("analyzed_at"))
             .values("day")
@@ -566,14 +580,14 @@ class StatsView(APIView):
             data={
                 "total_analyses": Analysis.objects.count(),
                 "unique_domains": Domain.objects.count(),
-                "total_detections": Technology.objects.count(),
+                "total_detections": sum(by_category.values()),
                 "avg_analysis_time_seconds": round(avg_ms / 1000, 2) if avg_ms else None,
                 "avg_confidence": round(avg_conf, 1) if avg_conf is not None else None,
                 "top_technologies": [
-                    {"name": row["name"], "category": row["category"], "count": row["count"]}
-                    for row in top
+                    {"name": name, "category": category, "count": count}
+                    for (name, category), count in top
                 ],
-                "by_category": {row["category"]: row["count"] for row in by_category},
+                "by_category": dict(by_category),
                 "activity": [
                     {"date": row["day"].isoformat(), "count": row["count"]}
                     for row in activity

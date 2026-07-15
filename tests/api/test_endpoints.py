@@ -387,3 +387,22 @@ class TestStats:
         assert data["by_category"]["frontend"] == 2
         assert data["by_category"]["server"] == 1
         assert data["avg_confidence"] is not None
+
+    def test_stats_dedupes_reanalysis_of_same_domain(self, client):
+        # Reanalizar el mismo dominio N veces NO debe inflar los conteos:
+        # cada tecnología cuenta una sola vez por dominio.
+        for _ in range(5):
+            make_analysis(url="https://facebook.com", techs=FAKE_TECHS)
+        resp = client.get("/api/v1/stats/")
+        data = resp.json()["data"]
+
+        assert data["total_analyses"] == 5      # sí hubo 5 análisis
+        assert data["unique_domains"] == 1
+        assert data["total_detections"] == 2    # React + Nginx, no 10
+        counts = {t["name"]: t["count"] for t in data["top_technologies"]}
+        assert counts["React"] == 1
+        assert counts["Nginx"] == 1
+        assert data["by_category"]["frontend"] == 1
+        assert data["by_category"]["server"] == 1
+        # El centro del donut cuadra con la suma de categorías.
+        assert data["total_detections"] == sum(data["by_category"].values())
