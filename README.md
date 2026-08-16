@@ -524,7 +524,7 @@ the test suite on every push and pull request.
 
 ## 📌 Status
 
-Project under development for **Software Engineering II**.
+Project under development for *Software Engineering II*.
 
 Presentation available at: https://jdrsajonia.github.io
 
